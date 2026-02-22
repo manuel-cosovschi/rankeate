@@ -104,4 +104,42 @@ export const api = {
         apiFetch('/admin/corrections', { token }),
     resolveCorrection: (token: string, id: number, data: any) =>
         apiFetch(`/admin/corrections/${id}/resolve`, { method: 'POST', token, body: JSON.stringify(data) }),
+
+    // ─── Courts (Club) ──────────────────────────────
+    getMyCourts: (token: string) =>
+        apiFetch('/courts/mine', { token }),
+    createCourt: (token: string, data: any) =>
+        apiFetch('/courts', { method: 'POST', token, body: JSON.stringify(data) }),
+    updateCourt: (token: string, id: number, data: any) =>
+        apiFetch(`/courts/${id}`, { method: 'PUT', token, body: JSON.stringify(data) }),
+    deleteCourt: (token: string, id: number) =>
+        apiFetch(`/courts/${id}`, { method: 'DELETE', token }),
+    setCourtSchedule: (token: string, courtId: number, schedules: any[]) =>
+        apiFetch(`/courts/${courtId}/schedule`, { method: 'PUT', token, body: JSON.stringify({ schedules }) }),
+    createCourtBlock: (token: string, courtId: number, data: any) =>
+        apiFetch(`/courts/${courtId}/blocks`, { method: 'POST', token, body: JSON.stringify(data) }),
+    deleteCourtBlock: (token: string, blockId: number) =>
+        apiFetch(`/courts/blocks/${blockId}`, { method: 'DELETE', token }),
+
+    // ─── Bookings ───────────────────────────────────
+    getAvailability: (clubId: number, date: string) =>
+        apiFetch(`/bookings/availability?clubId=${clubId}&date=${date}`),
+    getBookableClubs: (localityId?: number) =>
+        apiFetch(`/bookings/clubs${localityId ? `?localityId=${localityId}` : ''}`),
+    createBooking: (token: string, data: any) =>
+        apiFetch('/bookings', { method: 'POST', token, body: JSON.stringify(data) }),
+    cancelBooking: (token: string, id: number, reason?: string) =>
+        apiFetch(`/bookings/${id}/cancel`, { method: 'POST', token, body: JSON.stringify({ reason }) }),
+    getMyBookings: (token: string) =>
+        apiFetch('/bookings/mine', { token }),
+    getClubBookings: (token: string, params?: Record<string, string>) =>
+        apiFetch(`/bookings/club${params ? `?${new URLSearchParams(params)}` : ''}`, { token }),
+
+    // ─── Payments ───────────────────────────────────
+    createPaymentPreference: (token: string, bookingId: number) =>
+        apiFetch('/payments/create-preference', { method: 'POST', token, body: JSON.stringify({ bookingId }) }),
+    mockConfirmPayment: (token: string, paymentId: number) =>
+        apiFetch(`/payments/mock-confirm/${paymentId}`, { method: 'POST', token }),
+    getBookingPayments: (token: string, bookingId: number) =>
+        apiFetch(`/payments/booking/${bookingId}`, { token }),
 };

@@ -236,6 +236,7 @@ export default function ClubPage() {
                     <div className="tabs">
                         <button className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>Mis Torneos</button>
                         <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>Crear Torneo</button>
+                        <button className="tab" onClick={() => window.location.href = '/club/courts'}>🏟️ Canchas</button>
                         <button className={`tab ${activeTab === 'howto' ? 'active' : ''}`} onClick={() => setActiveTab('howto')}>Cómo Funciona</button>
                         <button className={`tab ${activeTab === 'terms' ? 'active' : ''}`} onClick={() => setActiveTab('terms')}>Términos</button>
                     </div>

@@ -8,6 +8,10 @@ import playersRoutes from './routes/players';
 import clubsRoutes from './routes/clubs';
 import adminRoutes from './routes/admin';
 import correctionsRoutes from './routes/corrections';
+import courtsRoutes from './routes/courts';
+import bookingsRoutes from './routes/bookings';
+import paymentsRoutes from './routes/payments';
+import { startScheduler } from './scheduler';
 
 const app = express();
 
@@ -51,6 +55,9 @@ app.use('/api/players', playersRoutes);
 app.use('/api/clubs', clubsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/corrections', correctionsRoutes);
+app.use('/api/courts', courtsRoutes);
+app.use('/api/bookings', bookingsRoutes);
+app.use('/api/payments', paymentsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -67,6 +74,7 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 app.listen(config.port, () => {
     console.log(`\n🚀 Rankeate API running on http://localhost:${config.port}`);
     console.log(`📊 Environment: ${config.nodeEnv}\n`);
+    startScheduler();
 });
 
 export default app;

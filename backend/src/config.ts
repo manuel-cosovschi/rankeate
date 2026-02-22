@@ -10,4 +10,8 @@ export const config = {
     jwtRefreshExpiresIn: '7d',
     corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
     nodeEnv: process.env.NODE_ENV || 'development',
+    mpAccessToken: process.env.MP_ACCESS_TOKEN || '',
+    mpWebhookSecret: process.env.MP_WEBHOOK_SECRET || '',
+    frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
+    backendUrl: process.env.BACKEND_URL || 'http://localhost:3001',
 };
