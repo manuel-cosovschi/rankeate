@@ -12,7 +12,17 @@ import correctionsRoutes from './routes/corrections';
 const app = express();
 
 // ─── Global middleware ──────────────────────────────
-app.use(cors({ origin: config.corsOrigin, credentials: true }));
+const allowedOrigins = config.corsOrigin.split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+            callback(null, true);
+        } else {
+            callback(null, false);
+        }
+    },
+    credentials: true,
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Rate limiting
