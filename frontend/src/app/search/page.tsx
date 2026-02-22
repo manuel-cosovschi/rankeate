@@ -15,7 +15,7 @@ export default function SearchPage() {
     const doSearch = async (q: string) => {
         if (!q.trim()) return;
         setLoading(true); setSearched(true);
-        try { const data = await api.searchPlayers(q.trim()); setResults(data); }
+        try { const data = await api.searchPlayers({ q: q.trim() }); setResults(data); }
         catch { setResults([]); }
         finally { setLoading(false); }
     };
