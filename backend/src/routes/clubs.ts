@@ -4,6 +4,7 @@ import prisma from '../prisma';
 import { authMiddleware, AuthRequest, roleMiddleware } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { calculatePoints } from '../services/points';
+import { checkPromotionsForPlayers } from '../services/promotion';
 import { logAudit } from '../services/audit';
 import { ClubStatus, ResultStatus, TournamentStatus, TournamentLevel, FinishPosition } from '@prisma/client';
 
@@ -295,6 +296,20 @@ router.post('/tournaments/:id/results/confirm', async (req: AuthRequest, res: Re
             pointsAwarded: pointMovements.reduce((s, m) => s + m.points, 0),
         });
 
+        // Check for category promotions
+        const playerIds = pointMovements.map(m => m.playerId);
+        const promotions = await checkPromotionsForPlayers(playerIds);
+
+        // Log promotions
+        for (const promo of promotions) {
+            await logAudit(req.user!.userId, 'CATEGORY_PROMOTION', 'player', promo.playerId, {
+                from: promo.fromCategory,
+                to: promo.toCategory,
+                totalPoints: promo.totalPoints,
+                threshold: promo.threshold,
+            });
+        }
+
         res.json({
             message: 'Resultados confirmados y puntos asignados',
             pointsAwarded: pointMovements.map((m) => ({
@@ -302,6 +317,7 @@ router.post('/tournaments/:id/results/confirm', async (req: AuthRequest, res: Re
                 points: m.points,
                 reason: m.reason,
             })),
+            promotions: promotions.length > 0 ? promotions : undefined,
         });
     } catch (error: any) {
         console.error('Confirm results error:', error);

@@ -79,6 +79,41 @@ export default function DashboardPage() {
                 </div>
             </div>
 
+            {/* Promotion Progress */}
+            {playerData?.promotion && (
+                <div className="card" style={{ marginBottom: 'var(--space-lg)' }}>
+                    <h3 className="card-title">🚀 Progreso de Ascenso</h3>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)', marginBottom: 'var(--space-md)' }}>
+                        {playerData.promotion.pointsNeeded > 0
+                            ? <>Te faltan <strong>{playerData.promotion.pointsNeeded} puntos</strong> para ascender de <strong>{playerData.promotion.currentCategory}</strong> a <strong>{playerData.promotion.nextCategory}</strong></>
+                            : <>¡Felicitaciones! Alcanzaste los puntos para ascender a <strong>{playerData.promotion.nextCategory}</strong>. El ascenso se procesará automáticamente.</>
+                        }
+                    </p>
+                    <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', height: '24px', overflow: 'hidden', position: 'relative' }}>
+                        <div style={{
+                            background: 'linear-gradient(90deg, var(--primary), var(--primary-light, #60a5fa))',
+                            height: '100%',
+                            width: `${playerData.promotion.progress}%`,
+                            borderRadius: '12px',
+                            transition: 'width 0.5s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'white',
+                            fontSize: 'var(--font-size-xs)',
+                            fontWeight: 700,
+                            minWidth: '40px',
+                        }}>
+                            {playerData.promotion.progress}%
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 'var(--space-xs)', fontSize: 'var(--font-size-xs)', color: 'var(--text-muted)' }}>
+                        <span>{playerData.promotion.currentPoints} pts</span>
+                        <span>{playerData.promotion.threshold} pts</span>
+                    </div>
+                </div>
+            )}
+
             <div className="tabs">
                 <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Editar Perfil</button>
                 <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Historial</button>
@@ -167,6 +202,20 @@ export default function DashboardPage() {
                         </table>
                         <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📈 Ranking</h4>
                         <p>Tu ranking se calcula sumando los <strong>mejores 8 resultados</strong> de los últimos <strong>12 meses</strong>. Los rankings están separados por <strong>Caballeros</strong> y <strong>Damas</strong>, y podés filtrar por categoría y localidad.</p>
+                        <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>🚀 Ascenso de Categoría</h4>
+                        <p>Si acumulás suficientes puntos, <strong>ascendés automáticamente</strong> a la siguiente categoría. Los umbrales son crecientes:</p>
+                        <table className="data-table" style={{ marginTop: 'var(--space-sm)' }}>
+                            <thead><tr><th>Ascenso</th><th>Puntos necesarios</th></tr></thead>
+                            <tbody>
+                                <tr><td>8va → 7ma</td><td>300 pts</td></tr>
+                                <tr><td>7ma → 6ta</td><td>600 pts</td></tr>
+                                <tr><td>6ta → 5ta</td><td>1.200 pts</td></tr>
+                                <tr><td>5ta → 4ta</td><td>2.000 pts</td></tr>
+                                <tr><td>4ta → 3ra</td><td>3.500 pts</td></tr>
+                                <tr><td>3ra → 2da</td><td>5.500 pts</td></tr>
+                                <tr><td>2da → 1ra</td><td>8.000 pts</td></tr>
+                            </tbody>
+                        </table>
                         <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📝 Correcciones</h4>
                         <p>Si notás un error en tus puntos, podés solicitar una corrección desde la pestaña &quot;Correcciones&quot;. Un administrador la revisará y resolverá.</p>
                     </div>

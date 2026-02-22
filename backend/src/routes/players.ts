@@ -3,6 +3,7 @@ import prisma from '../prisma';
 import { authMiddleware, AuthRequest, roleMiddleware } from '../middleware/auth';
 import { BEST_N_RESULTS, ROLLING_MONTHS } from '../services/points';
 import { getPlayerRankingPosition } from '../services/ranking';
+import { PROMOTION_THRESHOLDS } from '../services/promotion';
 
 const router = Router();
 
@@ -103,6 +104,11 @@ router.get('/:id', async (req, res: Response) => {
 
         const rankPosition = await getPlayerRankingPosition(player.id);
 
+        // Calculate promotion progress
+        const currentSortOrder = player.currentCategory.sortOrder;
+        const promotionThreshold = PROMOTION_THRESHOLDS[currentSortOrder] || null;
+        const nextCategory = currentSortOrder > 1 ? await prisma.category.findFirst({ where: { sortOrder: currentSortOrder - 1 } }) : null;
+
         res.json({
             id: player.id,
             firstName: player.firstName,
@@ -110,12 +116,21 @@ router.get('/:id', async (req, res: Response) => {
             localityName: player.locality.name,
             localityId: player.localityId,
             categoryName: player.currentCategory.name,
+            categorySortOrder: currentSortOrder,
             categoryId: player.currentCategoryId,
             handedness: player.handedness,
             preferredSide: player.preferredSide,
             birthDate: player.birthDate,
             totalPoints12m,
             rankPosition,
+            promotion: promotionThreshold ? {
+                currentCategory: player.currentCategory.name,
+                nextCategory: nextCategory?.name || null,
+                threshold: promotionThreshold,
+                currentPoints: totalPoints12m,
+                pointsNeeded: Math.max(0, promotionThreshold - totalPoints12m),
+                progress: Math.min(100, Math.round((totalPoints12m / promotionThreshold) * 100)),
+            } : null,
             tournaments: player.resultEntries.map((e) => ({
                 tournamentId: e.result.tournament.id,
                 tournamentName: e.result.tournament.name,
