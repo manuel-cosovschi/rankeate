@@ -72,8 +72,29 @@ export const api = {
     // Club
     getClubDashboard: (token: string) =>
         apiFetch('/clubs/me', { token }),
-    updateMpToken: (token: string, mpAccessToken: string) =>
-        apiFetch('/clubs/me/token', { method: 'PUT', token, body: JSON.stringify({ mpAccessToken }) }),
+    updateMpToken: async (token: string, mpAccessToken: string) => {
+        return apiFetch('/clubs/me/token', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mpAccessToken }),
+            token
+        });
+    },
+
+    // Generic methods for new endpoints
+    get: async (v: string) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        return apiFetch(v, { token: token || undefined });
+    },
+    post: async (v: string, body?: any) => {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const options: FetchOptions = { method: 'POST', token: token || undefined };
+        if (body) {
+            options.headers = { 'Content-Type': 'application/json' };
+            options.body = JSON.stringify(body);
+        }
+        return apiFetch(v, options);
+    },
     getMyTournaments: (token: string) =>
         apiFetch('/clubs/tournaments', { token }),
     createTournament: (token: string, data: any) =>

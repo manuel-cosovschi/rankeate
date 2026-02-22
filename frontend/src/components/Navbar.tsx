@@ -51,6 +51,7 @@ export default function Navbar() {
                     <li><Link href="/search">Jugadores</Link></li>
                     <li><Link href="/">Rankings</Link></li>
                     <li><Link href="/bookings">Reservas</Link></li>
+                    <li><Link href="/matches">Partidos</Link></li>
                 </ul>
 
                 <div className="navbar-search">
