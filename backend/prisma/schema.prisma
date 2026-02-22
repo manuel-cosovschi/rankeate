@@ -1,0 +1,288 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  PLAYER
+  CLUB
+  ADMIN
+}
+
+enum ClubStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TournamentLevel {
+  LOCAL_250
+  REGIONAL_500
+  OPEN_1000
+}
+
+enum TournamentStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum ResultStatus {
+  DRAFT
+  CONFIRMED
+}
+
+enum FinishPosition {
+  CHAMPION
+  FINALIST
+  SEMIFINALIST
+  QUARTERFINALIST
+  ROUND_OF_16
+  PARTICIPANT
+}
+
+enum Handedness {
+  RIGHT
+  LEFT
+  AMBIDEXTROUS
+}
+
+enum PreferredSide {
+  DRIVE
+  REVES
+  BOTH
+}
+
+enum CorrectionStatus {
+  PENDING
+  RESOLVED
+  REJECTED
+}
+
+// ─── Auth / Users ────────────────────────────────────────
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  role          UserRole  @default(PLAYER)
+  refreshToken  String?   @map("refresh_token")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  player               Player?
+  club                 Club?
+  pointMovementsCreated PointMovement[]   @relation("CreatedBy")
+  pointMovementsVoided  PointMovement[]   @relation("VoidedBy")
+  resultsConfirmed      TournamentResult[] @relation("ConfirmedBy")
+  auditLogs            AuditLog[]
+  corrections          CorrectionRequest[]
+
+  @@map("users")
+}
+
+// ─── Players ─────────────────────────────────────────────
+model Player {
+  id                Int            @id @default(autoincrement())
+  userId            Int?           @unique @map("user_id")
+  dni               String         @unique
+  firstName         String         @map("first_name")
+  lastName          String         @map("last_name")
+  birthDate         DateTime?      @map("birth_date") @db.Date
+  phone             String?
+  handedness        Handedness     @default(RIGHT)
+  preferredSide     PreferredSide  @default(DRIVE) @map("preferred_side")
+  localityId        Int            @map("locality_id")
+  currentCategoryId Int            @map("current_category_id")
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+
+  user              User?          @relation(fields: [userId], references: [id])
+  locality          Locality       @relation(fields: [localityId], references: [id])
+  currentCategory   Category       @relation(fields: [currentCategoryId], references: [id])
+  resultEntries     TournamentResultEntry[]
+  pointMovements    PointMovement[]
+  corrections       CorrectionRequest[]
+
+  @@index([localityId, currentCategoryId])
+  @@index([lastName])
+  @@map("players")
+}
+
+// ─── Clubs ───────────────────────────────────────────────
+model Club {
+  id          Int        @id @default(autoincrement())
+  userId      Int        @unique @map("user_id")
+  name        String
+  localityId  Int        @map("locality_id")
+  address     String?
+  email       String
+  phone       String?
+  cuit        String?
+  managerName String     @map("manager_name")
+  managerDni  String     @map("manager_dni")
+  website     String?
+  status      ClubStatus @default(PENDING)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  user        User       @relation(fields: [userId], references: [id])
+  locality    Locality   @relation(fields: [localityId], references: [id])
+  tournaments Tournament[]
+
+  @@map("clubs")
+}
+
+// ─── Tournaments ─────────────────────────────────────────
+model Tournament {
+  id          Int              @id @default(autoincrement())
+  clubId      Int              @map("club_id")
+  name        String
+  localityId  Int              @map("locality_id")
+  level       TournamentLevel  @default(LOCAL_250)
+  startDate   DateTime         @map("start_date") @db.Date
+  endDate     DateTime?        @map("end_date") @db.Date
+  surface     String?
+  observations String?
+  status      TournamentStatus @default(DRAFT)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  club        Club             @relation(fields: [clubId], references: [id])
+  locality    Locality         @relation(fields: [localityId], references: [id])
+  categories  TournamentCategory[]
+  results     TournamentResult[]
+  pointMovements PointMovement[]
+
+  @@map("tournaments")
+}
+
+model TournamentCategory {
+  id           Int        @id @default(autoincrement())
+  tournamentId Int        @map("tournament_id")
+  categoryId   Int        @map("category_id")
+
+  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     Category   @relation(fields: [categoryId], references: [id])
+
+  @@unique([tournamentId, categoryId])
+  @@map("tournament_categories")
+}
+
+// ─── Results ─────────────────────────────────────────────
+model TournamentResult {
+  id           Int          @id @default(autoincrement())
+  tournamentId Int          @map("tournament_id")
+  categoryId   Int          @map("category_id")
+  status       ResultStatus @default(DRAFT)
+  confirmedAt  DateTime?    @map("confirmed_at")
+  confirmedBy  Int?         @map("confirmed_by")
+
+  tournament   Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category     Category     @relation(fields: [categoryId], references: [id])
+  confirmer    User?        @relation("ConfirmedBy", fields: [confirmedBy], references: [id])
+  entries      TournamentResultEntry[]
+
+  @@unique([tournamentId, categoryId])
+  @@map("tournament_results")
+}
+
+model TournamentResultEntry {
+  id              Int            @id @default(autoincrement())
+  resultId        Int            @map("result_id")
+  playerId        Int            @map("player_id")
+  finishPosition  FinishPosition @map("finish_position")
+
+  result          TournamentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  player          Player           @relation(fields: [playerId], references: [id])
+
+  @@unique([resultId, playerId])
+  @@map("tournament_result_entries")
+}
+
+// ─── Points ──────────────────────────────────────────────
+model PointMovement {
+  id             Int       @id @default(autoincrement())
+  playerId       Int       @map("player_id")
+  tournamentId   Int       @map("tournament_id")
+  categoryId     Int       @map("category_id")
+  points         Int
+  reason         String
+  createdByUserId Int      @map("created_by_user_id")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  voidedAt       DateTime? @map("voided_at")
+  voidedBy       Int?      @map("voided_by")
+  voidReason     String?   @map("void_reason")
+
+  player         Player    @relation(fields: [playerId], references: [id])
+  tournament     Tournament @relation(fields: [tournamentId], references: [id])
+  category       Category  @relation(fields: [categoryId], references: [id])
+  createdByUser  User      @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  voidedByUser   User?     @relation("VoidedBy", fields: [voidedBy], references: [id])
+
+  @@index([playerId, createdAt])
+  @@index([tournamentId, categoryId])
+  @@map("point_movements")
+}
+
+// ─── Reference Data ──────────────────────────────────────
+model Category {
+  id        Int    @id @default(autoincrement())
+  name      String @unique
+  sortOrder Int    @map("sort_order")
+
+  players              Player[]
+  tournamentCategories TournamentCategory[]
+  tournamentResults    TournamentResult[]
+  pointMovements       PointMovement[]
+
+  @@map("categories")
+}
+
+model Locality {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  province String?
+
+  players     Player[]
+  clubs       Club[]
+  tournaments Tournament[]
+
+  @@map("localities")
+}
+
+// ─── Audit ───────────────────────────────────────────────
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  actorUserId Int?     @map("actor_user_id")
+  action      String
+  entityType  String   @map("entity_type")
+  entityId    Int      @map("entity_id")
+  payload     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  actor       User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId])
+  @@map("audit_log")
+}
+
+// ─── Correction Requests ─────────────────────────────────
+model CorrectionRequest {
+  id            Int              @id @default(autoincrement())
+  playerUserId  Int              @map("player_user_id")
+  playerId      Int              @map("player_id")
+  message       String
+  status        CorrectionStatus @default(PENDING)
+  adminResponse String?          @map("admin_response")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  resolvedAt    DateTime?        @map("resolved_at")
+
+  user          User             @relation(fields: [playerUserId], references: [id])
+  player        Player           @relation(fields: [playerId], references: [id])
+
+  @@map("correction_requests")
+}
