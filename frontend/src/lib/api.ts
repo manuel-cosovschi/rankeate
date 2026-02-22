@@ -72,6 +72,8 @@ export const api = {
     // Club
     getClubDashboard: (token: string) =>
         apiFetch('/clubs/me', { token }),
+    updateMpToken: (token: string, mpAccessToken: string) =>
+        apiFetch('/clubs/me/token', { method: 'PUT', token, body: JSON.stringify({ mpAccessToken }) }),
     getMyTournaments: (token: string) =>
         apiFetch('/clubs/tournaments', { token }),
     createTournament: (token: string, data: any) =>

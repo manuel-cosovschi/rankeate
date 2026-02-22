@@ -35,23 +35,26 @@ export async function createPaymentPreference(params: {
 
     // Check if a pending payment already exists for this booking
     const existing = await prisma.payment.findFirst({
-        where: {
-            bookingId,
-            payerId,
-            status: PaymentStatus.PENDING,
-        },
+        where: { bookingId, payerId, status: PaymentStatus.PENDING },
     });
 
     if (existing?.externalId) {
-        // Return existing preference
         return {
             payment: existing,
             preferenceUrl: `https://www.mercadopago.com.ar/checkout/v1/redirect?pref_id=${existing.externalId}`,
         };
     }
 
-    // Create MP preference via API
-    const mpAccessToken = config.mpAccessToken;
+    // Fetch booking to get the club's MP token
+    const booking = await prisma.booking.findUnique({
+        where: { id: bookingId },
+        include: { court: { include: { club: true } } },
+    });
+
+    if (!booking) throw new Error('Booking not found');
+
+    // Use club's token, fallback to global config token (or mock)
+    const mpAccessToken = booking.court.club.mpAccessToken || config.mpAccessToken;
 
     if (!mpAccessToken) {
         // If no MP token configured, create payment in mock mode

@@ -14,6 +14,9 @@ export default function ClubPage() {
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState('');
 
+    // Config
+    const [mpToken, setMpToken] = useState('');
+
     // Create tournament
     const [tName, setTName] = useState('');
     const [tDate, setTDate] = useState('');
@@ -35,11 +38,23 @@ export default function ClubPage() {
         Promise.all([
             api.getMyTournaments(token).catch(() => []),
             api.getCategories(),
-            api.getLocalities()
-        ]).then(([t, cats, locs]) => {
+            api.getLocalities(),
+            api.getClubDashboard(token)
+        ]).then(([t, cats, locs, cl]) => {
             setTournaments(t || []); setCategories(cats); setLocalities(locs);
+            if (cl?.mpAccessToken) setMpToken(cl.mpAccessToken);
         }).catch(console.error).finally(() => setLoading(false));
     }, [token]);
+
+    const handleUpdateMpToken = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            await api.updateMpToken(token!, mpToken);
+            setMsg('✅ Token de Mercado Pago guardado');
+        } catch (e: any) {
+            setMsg(`Error: ${e.message}`);
+        }
+    };
 
     const handleCreateTournament = async (e: React.FormEvent) => {
         e.preventDefault(); setMsg('');
@@ -237,9 +252,32 @@ export default function ClubPage() {
                         <button className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>Mis Torneos</button>
                         <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>Crear Torneo</button>
                         <button className="tab" onClick={() => window.location.href = '/club/courts'}>🏟️ Canchas</button>
+                        <button className={`tab ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>⚙️ Configuración</button>
                         <button className={`tab ${activeTab === 'howto' ? 'active' : ''}`} onClick={() => setActiveTab('howto')}>Cómo Funciona</button>
                         <button className={`tab ${activeTab === 'terms' ? 'active' : ''}`} onClick={() => setActiveTab('terms')}>Términos</button>
                     </div>
+
+                    {activeTab === 'config' && (
+                        <div className="card fade-in" style={{ maxWidth: '500px' }}>
+                            <h3 className="card-title">Configuración de Pagos</h3>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
+                                Ingresá tu Access Token de producción de Mercado Pago para que los jugadores te paguen directamente a tu cuenta al reservar canchas.
+                            </p>
+                            <form onSubmit={handleUpdateMpToken} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
+                                <div className="form-group">
+                                    <label className="form-label">Access Token (Prod)</label>
+                                    <input
+                                        className="form-input"
+                                        type="password"
+                                        placeholder="APP_USR-..."
+                                        value={mpToken}
+                                        onChange={e => setMpToken(e.target.value)}
+                                    />
+                                </div>
+                                <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Guardar Token</button>
+                            </form>
+                        </div>
+                    )}
 
                     {activeTab === 'tournaments' && (
                         <div className="fade-in">

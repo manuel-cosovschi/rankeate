@@ -142,6 +142,7 @@ model Club {
   tournaments Tournament[]
   courts      Court[]
   bookings    Booking[]
+  mpAccessToken String?    @map("mp_access_token")
 
   @@map("clubs")
 }

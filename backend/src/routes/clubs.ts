@@ -42,6 +42,22 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
     }
 });
 
+// ─── Update MP Token ────────────────────────────────
+router.put('/me/token', async (req: AuthRequest, res: Response) => {
+    try {
+        const { mpAccessToken } = req.body;
+
+        await prisma.club.update({
+            where: { userId: req.user!.userId },
+            data: { mpAccessToken: mpAccessToken || null },
+        });
+
+        res.json({ message: 'Token de Mercado Pago actualizado exitosamente' });
+    } catch (error: any) {
+        res.status(500).json({ error: 'Error al actualizar token' });
+    }
+});
+
 // ─── Create tournament ──────────────────────────────
 const createTournamentSchema = z.object({
     name: z.string().min(3),
