@@ -72,7 +72,7 @@ export default function HomePage() {
             <section className="hero-blue">
                 <div className="hero-content">
                     <div className="hero-badge"><span className="dot"></span> Ranking en Vivo 2025</div>
-                    <h1 className="hero-title">El Ranking Oficial de Padel y<br />Tenis de Argentina</h1>
+                    <h1 className="hero-title">El Ranking Oficial de<br />Padel de Argentina</h1>
                     <p className="hero-subtitle">
                         Competí, ganá y seguí tu progreso. Encontrá tu ranking hoy entre miles de jugadores y clubes de todo el país.
                     </p>

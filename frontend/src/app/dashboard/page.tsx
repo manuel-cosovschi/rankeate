@@ -150,7 +150,7 @@ export default function DashboardPage() {
                 <div className="card fade-in">
                     <h3 className="card-title">🏆 ¿Cómo Funciona Rankeate?</h3>
                     <div style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: 'var(--font-size-sm)' }}>
-                        <p><strong>Rankeate</strong> es el sistema de ranking oficial de padel y tenis de Argentina. Así funciona:</p>
+                        <p><strong>Rankeate</strong> es el sistema de ranking oficial de padel de Argentina. Así funciona:</p>
                         <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📋 Registro</h4>
                         <p>Al registrarte, elegís tu <strong>categoría actual</strong> (1ra a 8va), tu <strong>localidad</strong> y tu <strong>género</strong> (Caballero o Dama). Arrancás con 0 puntos en el ranking.</p>
                         <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>🎾 Torneos</h4>
