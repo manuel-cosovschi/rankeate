@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
 
-export default function SearchPage() {
+function SearchContent() {
     const searchParams = useSearchParams();
     const [query, setQuery] = useState(searchParams.get('q') || '');
     const [results, setResults] = useState<any[]>([]);
@@ -69,5 +69,13 @@ export default function SearchPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<div className="loading"><div className="spinner" /></div>}>
+            <SearchContent />
+        </Suspense>
     );
 }
