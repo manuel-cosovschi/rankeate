@@ -19,13 +19,85 @@ async function main() {
     ]);
 
     // ─── Localities ────────────────────────────────────
-    const localities = await Promise.all([
-        prisma.locality.upsert({ where: { name: 'Buenos Aires' }, update: {}, create: { name: 'Buenos Aires', province: 'Buenos Aires' } }),
-        prisma.locality.upsert({ where: { name: 'Córdoba' }, update: {}, create: { name: 'Córdoba', province: 'Córdoba' } }),
-        prisma.locality.upsert({ where: { name: 'Rosario' }, update: {}, create: { name: 'Rosario', province: 'Santa Fe' } }),
-        prisma.locality.upsert({ where: { name: 'Mendoza' }, update: {}, create: { name: 'Mendoza', province: 'Mendoza' } }),
-        prisma.locality.upsert({ where: { name: 'La Plata' }, update: {}, create: { name: 'La Plata', province: 'Buenos Aires' } }),
-    ]);
+    const localityData = [
+        // Buenos Aires
+        { name: 'CABA', province: 'Buenos Aires' },
+        { name: 'La Plata', province: 'Buenos Aires' },
+        { name: 'Mar del Plata', province: 'Buenos Aires' },
+        { name: 'Bahía Blanca', province: 'Buenos Aires' },
+        { name: 'Tandil', province: 'Buenos Aires' },
+        { name: 'San Isidro', province: 'Buenos Aires' },
+        { name: 'Pilar', province: 'Buenos Aires' },
+        { name: 'Tigre', province: 'Buenos Aires' },
+        { name: 'Quilmes', province: 'Buenos Aires' },
+        { name: 'Morón', province: 'Buenos Aires' },
+        { name: 'Lomas de Zamora', province: 'Buenos Aires' },
+        { name: 'Lanús', province: 'Buenos Aires' },
+        { name: 'Avellaneda', province: 'Buenos Aires' },
+        { name: 'Vicente López', province: 'Buenos Aires' },
+        { name: 'San Martín', province: 'Buenos Aires' },
+        { name: 'Junín', province: 'Buenos Aires' },
+        { name: 'Olavarría', province: 'Buenos Aires' },
+        { name: 'Necochea', province: 'Buenos Aires' },
+        { name: 'Pergamino', province: 'Buenos Aires' },
+        // Córdoba
+        { name: 'Córdoba', province: 'Córdoba' },
+        { name: 'Villa Carlos Paz', province: 'Córdoba' },
+        { name: 'Río Cuarto', province: 'Córdoba' },
+        { name: 'Villa María', province: 'Córdoba' },
+        // Santa Fe
+        { name: 'Rosario', province: 'Santa Fe' },
+        { name: 'Santa Fe', province: 'Santa Fe' },
+        { name: 'Rafaela', province: 'Santa Fe' },
+        { name: 'Venado Tuerto', province: 'Santa Fe' },
+        // Mendoza
+        { name: 'Mendoza', province: 'Mendoza' },
+        { name: 'San Rafael', province: 'Mendoza' },
+        // Tucumán
+        { name: 'San Miguel de Tucumán', province: 'Tucumán' },
+        // Entre Ríos
+        { name: 'Paraná', province: 'Entre Ríos' },
+        { name: 'Concordia', province: 'Entre Ríos' },
+        { name: 'Gualeguaychú', province: 'Entre Ríos' },
+        // Salta
+        { name: 'Salta', province: 'Salta' },
+        // Misiones
+        { name: 'Posadas', province: 'Misiones' },
+        // Corrientes
+        { name: 'Corrientes', province: 'Corrientes' },
+        // Chaco
+        { name: 'Resistencia', province: 'Chaco' },
+        // Santiago del Estero
+        { name: 'Santiago del Estero', province: 'Santiago del Estero' },
+        // San Juan
+        { name: 'San Juan', province: 'San Juan' },
+        // San Luis
+        { name: 'San Luis', province: 'San Luis' },
+        // Jujuy
+        { name: 'San Salvador de Jujuy', province: 'Jujuy' },
+        // Río Negro
+        { name: 'Neuquén', province: 'Neuquén' },
+        { name: 'San Carlos de Bariloche', province: 'Río Negro' },
+        { name: 'General Roca', province: 'Río Negro' },
+        // Chubut
+        { name: 'Rawson', province: 'Chubut' },
+        { name: 'Comodoro Rivadavia', province: 'Chubut' },
+        // La Pampa
+        { name: 'Santa Rosa', province: 'La Pampa' },
+        // Catamarca
+        { name: 'Catamarca', province: 'Catamarca' },
+        // La Rioja
+        { name: 'La Rioja', province: 'La Rioja' },
+        // Formosa
+        { name: 'Formosa', province: 'Formosa' },
+        // Santa Cruz
+        { name: 'Río Gallegos', province: 'Santa Cruz' },
+        // Tierra del Fuego
+        { name: 'Ushuaia', province: 'Tierra del Fuego' },
+    ];
+    const localities = await Promise.all(
+        localityData.map(l => prisma.locality.upsert({ where: { name: l.name }, update: {}, create: l }))
+    );
 
     const hash = await bcrypt.hash('Admin123!', 12);
 
