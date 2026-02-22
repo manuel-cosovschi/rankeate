@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 const wizardSteps = ['Categoría', 'Agregar Jugadores', 'Posiciones', 'Vista Previa'];
 
 export default function ClubPage() {
-    const { user, clubData } = useAuth();
+    const { user, club: clubData, token } = useAuth();
     const [activeTab, setActiveTab] = useState('tournaments');
     const [tournaments, setTournaments] = useState<any[]>([]);
     const [categories, setCategories] = useState<any[]>([]);
@@ -31,26 +31,28 @@ export default function ClubPage() {
     const [wizardPositions, setWizardPositions] = useState<Record<number, string>>({});
 
     useEffect(() => {
+        if (!token) return;
         Promise.all([
-            api.getMyTournaments?.().catch(() => []),
+            api.getMyTournaments(token).catch(() => []),
             api.getCategories(),
             api.getLocalities()
         ]).then(([t, cats, locs]) => {
             setTournaments(t || []); setCategories(cats); setLocalities(locs);
         }).catch(console.error).finally(() => setLoading(false));
-    }, []);
+    }, [token]);
 
     const handleCreateTournament = async (e: React.FormEvent) => {
         e.preventDefault(); setMsg('');
+        if (!token) return;
         try {
-            const t = await api.createTournament({ name: tName, date: tDate, level: tLevel, localityId: parseInt(tLocalityId) });
+            const t = await api.createTournament(token, { name: tName, date: tDate, level: tLevel, localityId: parseInt(tLocalityId) });
             setTournaments([t, ...tournaments]); setTName(''); setTDate(''); setMsg('Torneo creado correctamente.');
         } catch (err: any) { setMsg(err.message); }
     };
 
     const searchPlayers = async () => {
-        if (!playerSearch.trim()) return;
-        try { const data = await api.searchPlayers(playerSearch.trim()); setPlayerResults(data); }
+        if (!playerSearch.trim() || !token) return;
+        try { const data = await api.searchPlayersClub(token, { q: playerSearch.trim() }); setPlayerResults(data); }
         catch { setPlayerResults([]); }
     };
 
@@ -68,9 +70,10 @@ export default function ClubPage() {
 
     const handleSubmitResults = async () => {
         setMsg('');
+        if (!token) return;
         try {
             const results = wizardPlayers.map((p) => ({ playerId: p.id, position: wizardPositions[p.id] || 'PARTICIPANT', categoryId: parseInt(wizardCategory) }));
-            await api.submitResults(wizardTournament.id, { results });
+            await api.submitResults(token, wizardTournament.id, { results });
             setMsg('Resultados cargados correctamente.'); setWizardTournament(null); setWizardStep(0);
             setWizardPlayers([]); setWizardPositions({});
         } catch (err: any) { setMsg(err.message); }
@@ -89,7 +92,7 @@ export default function ClubPage() {
             <div className="dashboard-header">
                 <div>
                     <h1 style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
-                        {clubData?.clubName || 'Mi Club'}
+                        {clubData?.name || 'Mi Club'}
                         {statusBadge(clubData?.status || 'PENDING')}
                     </h1>
                     <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>{user?.email}</p>
@@ -148,7 +151,7 @@ export default function ClubPage() {
                             {playerResults.length > 0 && (
                                 <div className="table-container" style={{ marginBottom: 'var(--space-md)' }}>
                                     <table className="data-table"><tbody>
-                                        {playerResults.map((p) => (
+                                        {playerResults.map((p: any) => (
                                             <tr key={p.id}>
                                                 <td><span style={{ fontWeight: 600 }}>{p.firstName} {p.lastName}</span></td>
                                                 <td><span className="badge-category">{p.categoryName}</span></td>
@@ -241,12 +244,12 @@ export default function ClubPage() {
                                 <div className="empty-state"><p>No tenés torneos creados.</p></div>
                             ) : (
                                 <div style={{ display: 'grid', gap: 'var(--space-md)' }}>
-                                    {tournaments.map((t) => (
+                                    {tournaments.map((t: any) => (
                                         <div key={t.id} className="card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-md)' }}>
                                             <div>
                                                 <h3 style={{ fontWeight: 700, marginBottom: 'var(--space-xs)' }}>{t.name}</h3>
                                                 <div style={{ display: 'flex', gap: 'var(--space-md)', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                                    <span>📅 {new Date(t.date).toLocaleDateString('es-AR')}</span>
+                                                    <span>📅 {new Date(t.date || t.startDate).toLocaleDateString('es-AR')}</span>
                                                     <span className={`badge-level badge-level-${t.level}`}>{t.level}</span>
                                                     <span>{statusBadge(t.status || 'DRAFT')}</span>
                                                 </div>
@@ -268,7 +271,7 @@ export default function ClubPage() {
                                     <div className="form-group"><label className="form-label">Fecha</label><input className="form-input" type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} required /></div>
                                     <div className="form-group"><label className="form-label">Nivel</label><select className="form-select" value={tLevel} onChange={(e) => setTLevel(e.target.value)}><option value="250">250</option><option value="500">500</option><option value="1000">1000</option></select></div>
                                 </div>
-                                <div className="form-group"><label className="form-label">Localidad</label><select className="form-select" value={tLocalityId} onChange={(e) => setTLocalityId(e.target.value)} required><option value="">Seleccionar</option>{localities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
+                                <div className="form-group"><label className="form-label">Localidad</label><select className="form-select" value={tLocalityId} onChange={(e) => setTLocalityId(e.target.value)} required><option value="">Seleccionar</option>{localities.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
                                 <button type="submit" className="btn btn-primary">Crear Torneo</button>
                             </form>
                         </div>

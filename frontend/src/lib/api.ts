@@ -72,6 +72,8 @@ export const api = {
     // Club
     getClubDashboard: (token: string) =>
         apiFetch('/clubs/me', { token }),
+    getMyTournaments: (token: string) =>
+        apiFetch('/clubs/tournaments', { token }),
     createTournament: (token: string, data: any) =>
         apiFetch('/clubs/tournaments', { method: 'POST', token, body: JSON.stringify(data) }),
     getTournament: (token: string, id: number) =>
@@ -93,6 +95,10 @@ export const api = {
     voidPoints: (token: string, id: number, reason: string) =>
         apiFetch(`/admin/point-movements/${id}/void`, { method: 'POST', token, body: JSON.stringify({ reason }) }),
     getReports: (token: string) =>
+        apiFetch('/admin/reports', { token }),
+    getRecentMovements: (token: string) =>
+        apiFetch('/admin/reports', { token }),
+    getRecentTournaments: (token: string) =>
         apiFetch('/admin/reports', { token }),
     getCorrections: (token: string) =>
         apiFetch('/admin/corrections', { token }),

@@ -12,7 +12,7 @@ const sidebarItems = [
 ];
 
 export default function AdminPage() {
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const [activeSection, setActiveSection] = useState('overview');
     const [pendingClubs, setPendingClubs] = useState<any[]>([]);
     const [recentMovements, setRecentMovements] = useState<any[]>([]);
@@ -22,30 +22,34 @@ export default function AdminPage() {
     const [msg, setMsg] = useState('');
 
     useEffect(() => {
+        if (!token) return;
         Promise.all([
-            api.getPendingClubs?.().catch(() => []),
-            api.getRecentMovements?.().catch(() => []),
-            api.getRecentTournaments?.().catch(() => []),
-            api.getCorrections?.().catch(() => []),
+            api.getPendingClubs(token).catch(() => []),
+            api.getRecentMovements(token).catch(() => []),
+            api.getRecentTournaments(token).catch(() => []),
+            api.getCorrections(token).catch(() => []),
         ]).then(([clubs, movements, tournaments, corrs]) => {
             setPendingClubs(clubs || []); setRecentMovements(movements || []);
             setRecentTournaments(tournaments || []); setCorrections(corrs || []);
         }).finally(() => setLoading(false));
-    }, []);
+    }, [token]);
 
     const handleApprove = async (clubId: number) => {
-        try { await api.approveClub(clubId); setPendingClubs(pendingClubs.filter((c) => c.id !== clubId)); setMsg('Club aprobado.'); }
+        if (!token) return;
+        try { await api.approveClub(token, clubId); setPendingClubs(pendingClubs.filter((c) => c.id !== clubId)); setMsg('Club aprobado.'); }
         catch (err: any) { setMsg(err.message); }
     };
 
     const handleReject = async (clubId: number) => {
-        try { await api.rejectClub(clubId); setPendingClubs(pendingClubs.filter((c) => c.id !== clubId)); setMsg('Club rechazado.'); }
+        if (!token) return;
+        try { await api.rejectClub(token, clubId); setPendingClubs(pendingClubs.filter((c) => c.id !== clubId)); setMsg('Club rechazado.'); }
         catch (err: any) { setMsg(err.message); }
     };
 
     const handleVoid = async (movementId: number) => {
+        if (!token) return;
         if (!confirm('¿Estás seguro de anular este movimiento de puntos?')) return;
-        try { await api.voidMovement(movementId); setRecentMovements(recentMovements.filter((m) => m.id !== movementId)); setMsg('Movimiento anulado.'); }
+        try { await api.voidPoints(token, movementId, 'Anulado por admin'); setRecentMovements(recentMovements.filter((m) => m.id !== movementId)); setMsg('Movimiento anulado.'); }
         catch (err: any) { setMsg(err.message); }
     };
 
@@ -115,7 +119,6 @@ export default function AdminPage() {
                         </div>
 
                         <div className="grid-2">
-                            {/* Pending Clubs */}
                             <div className="card">
                                 <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     Clubes Pendientes
@@ -137,12 +140,11 @@ export default function AdminPage() {
                                 ))}
                             </div>
 
-                            {/* Recent Activity */}
                             <div className="card">
                                 <h3 className="card-title">Actividad Reciente</h3>
                                 {recentTournaments.length === 0 ? (
                                     <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-sm)' }}>Sin actividad reciente.</p>
-                                ) : recentTournaments.slice(0, 5).map((t, i) => (
+                                ) : recentTournaments.slice(0, 5).map((t: any, i: number) => (
                                     <div key={i} style={{ padding: 'var(--space-sm) 0', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: 'var(--space-sm)' }}>
                                         <div className="card-stat-icon green" style={{ width: 32, height: 32, fontSize: '0.8rem' }}>🏆</div>
                                         <div>
@@ -194,7 +196,7 @@ export default function AdminPage() {
                                 <table className="data-table">
                                     <thead><tr><th>TORNEO</th><th>FECHA</th><th>NIVEL</th><th>ESTADO</th></tr></thead>
                                     <tbody>
-                                        {recentTournaments.map((t, i) => (
+                                        {recentTournaments.map((t: any, i: number) => (
                                             <tr key={i}>
                                                 <td style={{ fontWeight: 600 }}>{t.name}</td>
                                                 <td style={{ color: 'var(--text-secondary)' }}>{new Date(t.date).toLocaleDateString('es-AR')}</td>
@@ -219,7 +221,7 @@ export default function AdminPage() {
                                 <table className="data-table">
                                     <thead><tr><th>JUGADOR</th><th>TORNEO</th><th>MOTIVO</th><th style={{ textAlign: 'right' }}>PUNTOS</th><th>FECHA</th><th></th></tr></thead>
                                     <tbody>
-                                        {recentMovements.map((m) => (
+                                        {recentMovements.map((m: any) => (
                                             <tr key={m.id}>
                                                 <td style={{ fontWeight: 600 }}>{m.playerName}</td>
                                                 <td>{m.tournamentName}</td>
