@@ -27,11 +27,13 @@ export async function createPaymentPreference(params: {
     description: string;
     backUrl: string;
     notificationUrl: string;
+    isSplitPayment?: boolean;
+    participantId?: number;
 }): Promise<{ payment: any; preferenceUrl: string }> {
-    const { bookingId, payerId, amount, description, backUrl, notificationUrl } = params;
+    const { bookingId, payerId, amount, description, backUrl, notificationUrl, isSplitPayment, participantId } = params;
 
-    // Generate idempotency key
-    const idempotencyKey = `booking_${bookingId}_${payerId}_${Date.now()}`;
+    // Generate idempotency key (append participantId if split payment)
+    const idempotencyKey = `booking_${bookingId}_${payerId}_${participantId || 0}_${Date.now()}`;
 
     // Check if a pending payment already exists for this booking
     const existing = await prisma.payment.findFirst({
@@ -64,7 +66,7 @@ export async function createPaymentPreference(params: {
                 bookingId,
                 payerId,
                 amount,
-                type: 'FULL',
+                type: isSplitPayment ? 'SPLIT' : 'FULL',
                 status: PaymentStatus.PENDING,
                 provider: 'mock',
                 externalId: mockId,
@@ -117,7 +119,7 @@ export async function createPaymentPreference(params: {
             bookingId,
             payerId,
             amount,
-            type: 'FULL',
+            type: isSplitPayment ? 'SPLIT' : 'FULL',
             status: PaymentStatus.PENDING,
             provider: 'mercadopago',
             externalId: mpData.id,
@@ -181,8 +183,7 @@ export async function processWebhook(data: {
     }
 
     if (mpPayment.status === 'approved') {
-        // Update payment and booking in a transaction
-        await prisma.$transaction([
+        const queries: any[] = [
             prisma.payment.update({
                 where: { id: payment.id },
                 data: {
@@ -191,14 +192,60 @@ export async function processWebhook(data: {
                     paidAt: new Date(),
                 },
             }),
-            prisma.booking.update({
-                where: { id: payment.bookingId },
-                data: {
-                    status: BookingStatus.CONFIRMED,
-                    expiresAt: null, // Clear expiry since it's now confirmed
-                },
-            }),
-        ]);
+        ];
+
+        if (payment.type === 'SPLIT') {
+            // Find participant and update
+            const match = await prisma.match.findUnique({ where: { bookingId: payment.bookingId }, include: { participants: true } });
+            if (match) {
+                const mp = match.participants.find(p => p.playerId === payment.payerId); // Simplified: assumes payerId == userId == player.userId (will fetch player id below to be safe)
+                const player = await prisma.player.findUnique({ where: { userId: payment.payerId } });
+
+                if (player) {
+                    queries.push(
+                        prisma.matchParticipant.update({
+                            where: { matchId_playerId: { matchId: match.id, playerId: player.id } },
+                            data: { status: 'CONFIRMED', paidAt: new Date() }
+                        })
+                    );
+                }
+            }
+        } else {
+            // Full payment: confirm booking
+            queries.push(
+                prisma.booking.update({
+                    where: { id: payment.bookingId },
+                    data: {
+                        status: BookingStatus.CONFIRMED,
+                        expiresAt: null, // Clear expiry since it's now confirmed
+                    },
+                })
+            );
+        }
+
+        // Update payment, booking/participant in a transaction
+        await prisma.$transaction(queries);
+
+        // If split, check if match is full now
+        if (payment.type === 'SPLIT') {
+            const match = await prisma.match.findUnique({ where: { bookingId: payment.bookingId } });
+            if (match) {
+                const { default: matchesRouter } = await import('../routes/matches'); // Not ideal to import router, move check logic to service
+                // Instead, just call the logic directly here or wait for next request to check
+                const m = await prisma.match.findUnique({ where: { id: match.id }, include: { participants: true } });
+                if (m) {
+                    const confirmed = m.participants.filter(p => p.status === 'CONFIRMED').length;
+                    if (confirmed === m.maxPlayers) {
+                        await prisma.$transaction([
+                            prisma.match.update({ where: { id: m.id }, data: { status: 'CONFIRMED' } }),
+                            prisma.booking.update({ where: { id: m.bookingId }, data: { status: BookingStatus.CONFIRMED, expiresAt: null } })
+                        ]);
+                    } else if (confirmed === m.maxPlayers && m.status === 'OPEN') {
+                        await prisma.match.update({ where: { id: m.id }, data: { status: 'FULL' } });
+                    }
+                }
+            }
+        }
 
         return { processed: true, action: 'payment_approved_booking_confirmed' };
     }

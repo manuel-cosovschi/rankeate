@@ -1,4 +1,4 @@
-import { expirePendingBookings } from './services/booking';
+import { expirePendingBookings, expirePendingMatchParticipants } from './services/booking';
 
 const EXPIRY_CHECK_INTERVAL_MS = 60 * 1000; // 60 seconds
 
@@ -14,6 +14,11 @@ export function startScheduler() {
             const expired = await expirePendingBookings();
             if (expired > 0) {
                 console.log(`⏰ Expired ${expired} pending booking(s)`);
+            }
+
+            const expiredParticipants = await expirePendingMatchParticipants();
+            if (expiredParticipants > 0) {
+                console.log(`⏰ Expired ${expiredParticipants} pending match participant(s)`);
             }
         } catch (error) {
             console.error('⏰ Scheduler error:', error);

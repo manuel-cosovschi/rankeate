@@ -199,3 +199,36 @@ export async function expirePendingBookings(): Promise<number> {
 
     return result.count;
 }
+
+/**
+ * Expire pending match participants that haven't paid in time.
+ */
+export async function expirePendingMatchParticipants(): Promise<number> {
+    const expired = await prisma.matchParticipant.findMany({
+        where: {
+            status: 'PENDING_PAYMENT',
+            expiresAt: { lte: new Date() },
+        },
+        include: { match: true }
+    });
+
+    if (expired.length === 0) return 0;
+
+    await prisma.$transaction(
+        expired.map(p => prisma.matchParticipant.update({
+            where: { id: p.id },
+            data: { status: 'EXPIRED' }
+        }))
+    );
+
+    // Also, if any match was FULL but now has an expired spot, revert to OPEN
+    const matchIds = [...new Set(expired.map(p => p.matchId))];
+    for (const matchId of matchIds) {
+        const match = await prisma.match.findUnique({ where: { id: matchId } });
+        if (match?.status === 'FULL') {
+            await prisma.match.update({ where: { id: matchId }, data: { status: 'OPEN' } });
+        }
+    }
+
+    return expired.length;
+}

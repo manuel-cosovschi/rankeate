@@ -6,7 +6,7 @@ import { validate } from '../middleware/validate';
 import { calculatePoints } from '../services/points';
 import { checkPromotionsForPlayers } from '../services/promotion';
 import { logAudit } from '../services/audit';
-import { ClubStatus, ResultStatus, TournamentStatus, TournamentLevel, FinishPosition } from '@prisma/client';
+import { ClubStatus, ResultStatus, TournamentStatus, TournamentLevel, FinishPosition, BookingStatus } from '@prisma/client';
 
 const router = Router();
 
@@ -373,6 +373,61 @@ router.get('/players/search', async (req: AuthRequest, res: Response) => {
         res.json(players);
     } catch (error: any) {
         res.status(500).json({ error: 'Error al buscar jugadores' });
+    }
+});
+
+// ─── Analytics (Phase 3) ────────────────────────────────────────────────
+
+router.get('/me/analytics', authMiddleware, roleMiddleware('CLUB'), async (req: AuthRequest, res) => {
+    try {
+        const club = await prisma.club.findUnique({
+            where: { userId: req.user!.userId }
+        });
+
+        if (!club) {
+            return res.status(404).json({ error: 'Club no encontrado' });
+        }
+
+        // Basic stats for the last 30 days
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const bookings = await prisma.booking.findMany({
+            where: {
+                clubId: club.id,
+                createdAt: { gte: thirtyDaysAgo },
+                status: BookingStatus.CONFIRMED
+            },
+            include: { match: true }
+        });
+
+        const totalBookings = bookings.length;
+        const totalRevenue = bookings.reduce((sum, b) => sum + b.totalPrice, 0);
+
+        // Matches vs regular bookings
+        const matchmakingBookings = bookings.filter(b => b.match !== null).length;
+
+        // Peak hours (simple aggregation)
+        const hourCounts: Record<number, number> = {};
+        bookings.forEach(b => {
+            const h = new Date(b.startAt).getHours();
+            hourCounts[h] = (hourCounts[h] || 0) + 1;
+        });
+
+        res.json({
+            period: 'Ultimos 30 dias',
+            totalBookings,
+            totalRevenue,
+            matchmakingEngagment: {
+                matchesCreated: matchmakingBookings,
+                percentage: totalBookings > 0 ? (matchmakingBookings / totalBookings) * 100 : 0
+            },
+            peakHours: hourCounts
+        });
+
+    } catch (error) {
+        console.error('Fetch analytics error:', error);
+        res.status(500).json({ error: 'Error al obtener estadísticas' });
     }
 });
 
