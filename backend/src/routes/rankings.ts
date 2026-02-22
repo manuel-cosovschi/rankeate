@@ -9,10 +9,11 @@ router.get('/', async (req, res: Response) => {
     try {
         const localityId = req.query.localityId ? parseInt(req.query.localityId as string) : undefined;
         const categoryId = req.query.categoryId ? parseInt(req.query.categoryId as string) : undefined;
+        const gender = req.query.gender as string | undefined;
         const page = parseInt(req.query.page as string) || 1;
         const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
 
-        const result = await getRankings({ localityId, categoryId, page, limit });
+        const result = await getRankings({ localityId, categoryId, gender, page, limit });
         res.json(result);
     } catch (error: any) {
         console.error('Rankings error:', error);

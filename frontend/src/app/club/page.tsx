@@ -236,6 +236,8 @@ export default function ClubPage() {
                     <div className="tabs">
                         <button className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>Mis Torneos</button>
                         <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>Crear Torneo</button>
+                        <button className={`tab ${activeTab === 'howto' ? 'active' : ''}`} onClick={() => setActiveTab('howto')}>Cómo Funciona</button>
+                        <button className={`tab ${activeTab === 'terms' ? 'active' : ''}`} onClick={() => setActiveTab('terms')}>Términos</button>
                     </div>
 
                     {activeTab === 'tournaments' && (
@@ -274,6 +276,66 @@ export default function ClubPage() {
                                 <div className="form-group"><label className="form-label">Localidad</label><select className="form-select" value={tLocalityId} onChange={(e) => setTLocalityId(e.target.value)} required><option value="">Seleccionar</option>{localities.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
                                 <button type="submit" className="btn btn-primary">Crear Torneo</button>
                             </form>
+                        </div>
+                    )}
+
+                    {activeTab === 'howto' && (
+                        <div className="card fade-in">
+                            <h3 className="card-title">🏆 ¿Cómo Funciona Rankeate para Clubes?</h3>
+                            <div style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: 'var(--font-size-sm)' }}>
+                                <p><strong>Rankeate</strong> permite a los clubes organizar torneos oficiales y otorgar puntos que cuentan para el ranking nacional.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📋 Paso 1: Registro y Aprobación</h4>
+                                <p>Al registrar tu club, queda en estado <strong>Pendiente</strong>. Un administrador revisará y aprobará tu solicitud. Una vez aprobado, podés crear torneos.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>🎾 Paso 2: Crear un Torneo</h4>
+                                <p>Desde la pestaña "Crear Torneo", completá el nombre, fecha, localidad y <strong>nivel</strong> del torneo:</p>
+                                <ul style={{ paddingLeft: 'var(--space-lg)', margin: 'var(--space-sm) 0' }}>
+                                    <li><strong>Nivel 250:</strong> Torneo local / social</li>
+                                    <li><strong>Nivel 500:</strong> Torneo regional / intermedio</li>
+                                    <li><strong>Nivel 1000:</strong> Torneo mayor / campeonato</li>
+                                </ul>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📊 Paso 3: Cargar Resultados</h4>
+                                <p>Una vez finalizado el torneo, usá el botón "Cargar Resultados" en la tarjeta del torneo. El wizard de 4 pasos te guía:</p>
+                                <ol style={{ paddingLeft: 'var(--space-lg)', margin: 'var(--space-sm) 0' }}>
+                                    <li>Elegí la <strong>categoría</strong> del cuadro (1ra a 8va)</li>
+                                    <li>Buscá y agregá los <strong>jugadores</strong> que participaron</li>
+                                    <li>Asigná la <strong>posición</strong> final de cada jugador</li>
+                                    <li>Revisá y confirmá los resultados</li>
+                                </ol>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>✅ Asignación Automática de Puntos</h4>
+                                <table className="data-table" style={{ marginTop: 'var(--space-sm)' }}>
+                                    <thead><tr><th>Posición</th><th>Torneo 250</th><th>Torneo 500</th><th>Torneo 1000</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>🥇 Campeón</td><td>250 pts</td><td>500 pts</td><td>1000 pts</td></tr>
+                                        <tr><td>🥈 Finalista</td><td>150 pts</td><td>300 pts</td><td>600 pts</td></tr>
+                                        <tr><td>🥉 Semifinalista</td><td>75 pts</td><td>150 pts</td><td>300 pts</td></tr>
+                                        <tr><td>Cuartos de Final</td><td>40 pts</td><td>80 pts</td><td>160 pts</td></tr>
+                                    </tbody>
+                                </table>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>📝 Importante</h4>
+                                <p>Los resultados son <strong>permanentes</strong> una vez cargados. Si hay un error, un administrador puede anular puntos. El club es responsable de la veracidad de los resultados.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'terms' && (
+                        <div className="card fade-in">
+                            <h3 className="card-title">📜 Términos y Condiciones para Clubes</h3>
+                            <div style={{ color: 'var(--text-secondary)', lineHeight: 1.7, fontSize: 'var(--font-size-sm)' }}>
+                                <h4 style={{ color: 'var(--text-primary)' }}>1. Responsabilidad del Club</h4>
+                                <p>El club es responsable de la veracidad de todos los resultados cargados en la plataforma. Cargar resultados falsos o manipulados resultará en la suspensión y posible eliminación del club.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>2. Aprobación</h4>
+                                <p>Todo club debe ser aprobado por la administración antes de poder crear torneos. La administración se reserva el derecho de rechazar o revocar la aprobación en cualquier momento.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>3. Torneos</h4>
+                                <p>Los torneos deben ser eventos reales realizados en las instalaciones del club o locaciones autorizadas. No se permite la creación de torneos ficticios.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>4. Puntos</h4>
+                                <p>El club otorga puntos siguiendo estrictamente la tabla de puntos oficial según el nivel del torneo y la posición del jugador. No se pueden otorgar puntos discrecionalmente.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>5. Datos del Responsable</h4>
+                                <p>El responsable del club debe proporcionar datos verídicos (nombre y DNI). Esta información puede ser verificada por la administración.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>6. Auditoría</h4>
+                                <p>Todas las acciones del club (creación de torneos, carga de resultados) quedan registradas en el sistema de auditoría. La administración puede revisar cualquier actividad en cualquier momento.</p>
+                                <h4 style={{ marginTop: 'var(--space-md)', color: 'var(--text-primary)' }}>7. Uso de Datos</h4>
+                                <p>Los datos del club (nombre, localidad) son públicos. La información del responsable es privada y solo accesible por administradores.</p>
+                            </div>
                         </div>
                     )}
                 </>

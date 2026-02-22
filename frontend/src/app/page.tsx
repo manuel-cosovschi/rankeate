@@ -20,6 +20,7 @@ export default function HomePage() {
     const [localities, setLocalities] = useState<any[]>([]);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedLocality, setSelectedLocality] = useState('');
+    const [selectedGender, setSelectedGender] = useState('MALE');
     const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(true);
     const [page, setPage] = useState(1);
@@ -34,7 +35,7 @@ export default function HomePage() {
 
     useEffect(() => {
         setLoading(true);
-        const params: Record<string, string> = { page: String(page), limit: String(limit) };
+        const params: Record<string, string> = { page: String(page), limit: String(limit), gender: selectedGender };
         if (selectedCategory) params.categoryId = selectedCategory;
         if (selectedLocality) params.localityId = selectedLocality;
 
@@ -42,7 +43,7 @@ export default function HomePage() {
             .then((data) => { setRankings(data.data); setTotal(data.total); })
             .catch(console.error)
             .finally(() => setLoading(false));
-    }, [selectedCategory, selectedLocality, page]);
+    }, [selectedCategory, selectedLocality, selectedGender, page]);
 
     const totalPages = Math.ceil(total / limit);
 
@@ -146,7 +147,11 @@ export default function HomePage() {
                         {/* Main Content */}
                         <div>
                             <div className="section-header">
-                                <h2 className="section-title" style={{ marginBottom: 0 }}>Ranking General</h2>
+                                <h2 className="section-title" style={{ marginBottom: 0 }}>Ranking {selectedGender === 'MALE' ? 'Caballeros' : 'Damas'}</h2>
+                            </div>
+                            <div className="tabs" style={{ marginBottom: 'var(--space-lg)' }}>
+                                <button className={`tab ${selectedGender === 'MALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('MALE'); setPage(1); }}>🏆 Caballeros</button>
+                                <button className={`tab ${selectedGender === 'FEMALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('FEMALE'); setPage(1); }}>🏆 Damas</button>
                             </div>
 
                             {loading ? (

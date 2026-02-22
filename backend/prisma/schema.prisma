@@ -57,6 +57,11 @@ enum PreferredSide {
   BOTH
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 enum CorrectionStatus {
   PENDING
   RESOLVED
@@ -93,6 +98,7 @@ model Player {
   lastName          String         @map("last_name")
   birthDate         DateTime?      @map("birth_date") @db.Date
   phone             String?
+  gender            Gender         @default(MALE)
   handedness        Handedness     @default(RIGHT)
   preferredSide     PreferredSide  @default(DRIVE) @map("preferred_side")
   localityId        Int            @map("locality_id")

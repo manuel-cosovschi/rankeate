@@ -14,6 +14,8 @@ async function main() {
         prisma.category.upsert({ where: { name: '4ta' }, update: {}, create: { name: '4ta', sortOrder: 4 } }),
         prisma.category.upsert({ where: { name: '5ta' }, update: {}, create: { name: '5ta', sortOrder: 5 } }),
         prisma.category.upsert({ where: { name: '6ta' }, update: {}, create: { name: '6ta', sortOrder: 6 } }),
+        prisma.category.upsert({ where: { name: '7ma' }, update: {}, create: { name: '7ma', sortOrder: 7 } }),
+        prisma.category.upsert({ where: { name: '8va' }, update: {}, create: { name: '8va', sortOrder: 8 } }),
     ]);
 
     // ─── Localities ────────────────────────────────────

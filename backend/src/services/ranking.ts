@@ -6,6 +6,7 @@ interface RankingEntry {
     playerId: number;
     firstName: string;
     lastName: string;
+    gender: string;
     totalPoints: number;
     localityName: string;
     categoryName: string;
@@ -14,12 +15,13 @@ interface RankingEntry {
 interface RankingOptions {
     localityId?: number;
     categoryId?: number;
+    gender?: string;
     page: number;
     limit: number;
 }
 
 export async function getRankings(options: RankingOptions): Promise<{ data: RankingEntry[]; total: number; page: number; limit: number }> {
-    const { localityId, categoryId, page = 1, limit = 20 } = options;
+    const { localityId, categoryId, gender, page = 1, limit = 20 } = options;
 
     const cutoffDate = new Date();
     cutoffDate.setMonth(cutoffDate.getMonth() - ROLLING_MONTHS);
@@ -28,6 +30,7 @@ export async function getRankings(options: RankingOptions): Promise<{ data: Rank
     const playerWhere: any = {};
     if (localityId) playerWhere.localityId = localityId;
     if (categoryId) playerWhere.currentCategoryId = categoryId;
+    if (gender) playerWhere.gender = gender;
 
     // Get all players matching filters
     const players = await prisma.player.findMany({
@@ -55,6 +58,7 @@ export async function getRankings(options: RankingOptions): Promise<{ data: Rank
                 playerId: player.id,
                 firstName: player.firstName,
                 lastName: player.lastName,
+                gender: player.gender,
                 totalPoints,
                 localityName: player.locality.name,
                 categoryName: player.currentCategory.name,
@@ -83,11 +87,12 @@ export async function getPlayerRankingPosition(playerId: number): Promise<number
     });
     if (!player) return null;
 
-    // Get all players in same locality + category
+    // Get all players in same locality + category + gender
     const allPlayers = await prisma.player.findMany({
         where: {
             localityId: player.localityId,
             currentCategoryId: player.currentCategoryId,
+            gender: player.gender,
         },
         include: {
             pointMovements: {

@@ -19,6 +19,7 @@ const registerPlayerSchema = z.object({
     lastName: z.string().min(2, 'Apellido muy corto'),
     localityId: z.number().int().positive(),
     categoryId: z.number().int().positive(),
+    gender: z.enum(['MALE', 'FEMALE']),
     handedness: z.enum(['RIGHT', 'LEFT', 'AMBIDEXTROUS']).optional(),
     preferredSide: z.enum(['DRIVE', 'REVES', 'BOTH']).optional(),
     birthDate: z.string().optional(),
@@ -46,7 +47,7 @@ const loginSchema = z.object({
 // ─── Register Player ─────────────────────────────────
 router.post('/register-player', validate(registerPlayerSchema), async (req, res: Response) => {
     try {
-        const { email, password, dni, firstName, lastName, localityId, categoryId, handedness, preferredSide, birthDate, phone } = req.body;
+        const { email, password, dni, firstName, lastName, localityId, categoryId, gender, handedness, preferredSide, birthDate, phone } = req.body;
 
         // Check unique email
         const existingEmail = await prisma.user.findUnique({ where: { email } });
@@ -78,6 +79,7 @@ router.post('/register-player', validate(registerPlayerSchema), async (req, res:
                 dni,
                 firstName,
                 lastName,
+                gender: gender || 'MALE',
                 localityId,
                 currentCategoryId: categoryId,
                 handedness: handedness || 'RIGHT',

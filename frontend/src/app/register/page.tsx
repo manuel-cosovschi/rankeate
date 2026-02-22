@@ -22,6 +22,7 @@ export default function RegisterPage() {
     const [pLastName, setPLastName] = useState('');
     const [pLocalityId, setPLocalityId] = useState('');
     const [pCategoryId, setPCategoryId] = useState('');
+    const [pGender, setPGender] = useState('MALE');
     const [pHandedness, setPHandedness] = useState('RIGHT');
     const [pSide, setPSide] = useState('DRIVE');
     const [pPhone, setPPhone] = useState('');
@@ -44,7 +45,7 @@ export default function RegisterPage() {
     const handlePlayerRegister = async (e: React.FormEvent) => {
         e.preventDefault(); setError(''); setLoading(true);
         try {
-            const data = await api.registerPlayer({ email: pEmail, password: pPassword, dni: pDni, firstName: pFirstName, lastName: pLastName, localityId: parseInt(pLocalityId), categoryId: parseInt(pCategoryId), handedness: pHandedness, preferredSide: pSide, phone: pPhone || undefined });
+            const data = await api.registerPlayer({ email: pEmail, password: pPassword, dni: pDni, firstName: pFirstName, lastName: pLastName, localityId: parseInt(pLocalityId), categoryId: parseInt(pCategoryId), gender: pGender, handedness: pHandedness, preferredSide: pSide, phone: pPhone || undefined });
             setAuth(data); router.push('/dashboard');
         } catch (err: any) { setError(err.message); } finally { setLoading(false); }
     };
@@ -78,6 +79,9 @@ export default function RegisterPage() {
                         <div className="form-group"><label className="form-label">Contraseña (mín. 6 caracteres)</label><input className="form-input" type="password" value={pPassword} onChange={(e) => setPPassword(e.target.value)} required /></div>
                         <div className="form-row">
                             <div className="form-group"><label className="form-label">Localidad</label><select className="form-select" value={pLocalityId} onChange={(e) => setPLocalityId(e.target.value)} required><option value="">Seleccionar</option>{localities.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group"><label className="form-label">Género</label><select className="form-select" value={pGender} onChange={(e) => setPGender(e.target.value)} required><option value="MALE">Caballero</option><option value="FEMALE">Dama</option></select></div>
                             <div className="form-group"><label className="form-label">Categoría</label><select className="form-select" value={pCategoryId} onChange={(e) => setPCategoryId(e.target.value)} required><option value="">Seleccionar</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
                         </div>
                         <div className="form-row">
