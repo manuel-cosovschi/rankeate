@@ -16,4 +16,4 @@ RUN npm run build
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma db push --accept-data-loss && (npm run db:seed || echo 'Seed skipped') && npm start"]
+CMD ["sh", "-c", "npx prisma db push --accept-data-loss && npm start"]
