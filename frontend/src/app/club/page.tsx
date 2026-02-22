@@ -13,6 +13,7 @@ export default function ClubPage() {
     const [categories, setCategories] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [msg, setMsg] = useState('');
+    const [analytics, setAnalytics] = useState<any>(null);
 
     // Config
     const [mpToken, setMpToken] = useState('');
@@ -39,10 +40,12 @@ export default function ClubPage() {
             api.getMyTournaments(token).catch(() => []),
             api.getCategories(),
             api.getLocalities(),
-            api.getClubDashboard(token)
-        ]).then(([t, cats, locs, cl]) => {
+            api.getClubDashboard(token),
+            api.get('/clubs/me/analytics').catch(() => null)
+        ]).then(([t, cats, locs, cl, beStats]) => {
             setTournaments(t || []); setCategories(cats); setLocalities(locs);
             if (cl?.mpAccessToken) setMpToken(cl.mpAccessToken);
+            if (beStats && beStats.data) setAnalytics(beStats.data);
         }).catch(console.error).finally(() => setLoading(false));
     }, [token]);
 
@@ -252,6 +255,7 @@ export default function ClubPage() {
                         <button className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>Mis Torneos</button>
                         <button className={`tab ${activeTab === 'create' ? 'active' : ''}`} onClick={() => setActiveTab('create')}>Crear Torneo</button>
                         <button className="tab" onClick={() => window.location.href = '/club/courts'}>🏟️ Canchas</button>
+                        <button className={`tab ${activeTab === 'analytics' ? 'active' : ''}`} onClick={() => setActiveTab('analytics')}>📊 Estadísticas</button>
                         <button className={`tab ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>⚙️ Configuración</button>
                         <button className={`tab ${activeTab === 'howto' ? 'active' : ''}`} onClick={() => setActiveTab('howto')}>Cómo Funciona</button>
                         <button className={`tab ${activeTab === 'terms' ? 'active' : ''}`} onClick={() => setActiveTab('terms')}>Términos</button>
@@ -276,6 +280,50 @@ export default function ClubPage() {
                                 </div>
                                 <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start' }}>Guardar Token</button>
                             </form>
+                        </div>
+                    )}
+
+                    {activeTab === 'analytics' && analytics && (
+                        <div className="fade-in">
+                            <h3 className="card-title mb-4">Métricas de los últimos 30 días</h3>
+                            <div className="stats-grid" style={{ marginBottom: 'var(--space-lg)' }}>
+                                <div className="card card-stat">
+                                    <div className="stat-label">RESERVAS TOTALES</div>
+                                    <div className="stat-value">{analytics.totalBookings}</div>
+                                </div>
+                                <div className="card card-stat">
+                                    <div className="stat-label">INGRESOS (PROYECCIÓN)</div>
+                                    <div className="stat-value text-green-600">${analytics.totalRevenue.toLocaleString('es-AR')}</div>
+                                </div>
+                                <div className="card card-stat">
+                                    <div className="stat-label">PARTIDOS ARMADOS</div>
+                                    <div className="stat-value text-blue-600">{analytics.matchmakingEngagment?.matchesCreated || 0}</div>
+                                </div>
+                            </div>
+
+                            <div className="card">
+                                <h4 className="font-semibold mb-2">Enganche de Matchmaking</h4>
+                                <p className="text-sm text-muted-foreground mb-4">Qué porcentaje de las reservas del club se generaron a través del buscador de partidos públicos.</p>
+
+                                <div style={{ background: 'var(--bg-secondary)', borderRadius: '12px', height: '24px', overflow: 'hidden', position: 'relative' }}>
+                                    <div style={{
+                                        background: 'linear-gradient(90deg, var(--primary), var(--primary-light, #60a5fa))',
+                                        height: '100%',
+                                        width: `${Math.max(analytics.matchmakingEngagment?.percentage || 0, 5)}%`,
+                                        borderRadius: '12px',
+                                        transition: 'width 0.5s ease',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontSize: 'var(--font-size-xs)',
+                                        fontWeight: 700,
+                                        minWidth: '40px',
+                                    }}>
+                                        {Math.round(analytics.matchmakingEngagment?.percentage || 0)}%
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
