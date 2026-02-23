@@ -1,9 +1,6 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Calendar, Clock, MapPin, Users, Trophy } from 'lucide-react';
 import { api } from '@/lib/api';
 import { format } from 'date-fns';
@@ -42,99 +39,103 @@ export default function MatchesPage() {
 
     if (loading) {
         return (
-            <div className="container mx-auto px-4 py-8 flex justify-center items-center h-[50vh]">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <div className="loading">
+                <div className="spinner"></div>
             </div>
         );
     }
 
     return (
-        <div className="container mx-auto px-4 py-8 max-w-5xl">
-            <div className="flex justify-between items-center mb-8">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Partidos Abiertos</h1>
-                    <p className="text-muted-foreground mt-1">Sumate a un partido buscando jugadores</p>
-                </div>
+        <div className="container" style={{ padding: 'var(--space-xl) var(--space-md)' }}>
+            <div style={{ marginBottom: 'var(--space-xl)' }}>
+                <h1 style={{ fontSize: 'var(--font-size-3xl)', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 'var(--space-xs)' }}>
+                    Partidos Abiertos
+                </h1>
+                <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--font-size-lg)' }}>
+                    Sumate a un partido buscando jugadores en tu zona.
+                </p>
             </div>
 
             {matches.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
-                    <div className="h-20 w-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 shadow-inner">
-                        <Calendar className="h-10 w-10" />
+                <div className="empty-state" style={{ padding: 'var(--space-3xl) var(--space-xl)', background: 'var(--bg-card)', border: '2px dashed var(--border-color)', borderRadius: 'var(--radius-xl)' }}>
+                    <div className="avatar avatar-blue" style={{ width: 80, height: 80, fontSize: '2rem', marginBottom: 'var(--space-lg)', margin: '0 auto', background: 'var(--blue-50)', color: 'var(--blue-600)' }}>
+                        <Calendar size={40} />
                     </div>
-                    <h3 className="text-2xl font-bold tracking-tight mb-2">No hay partidos abiertos</h3>
-                    <p className="text-muted-foreground max-w-sm mx-auto mb-8 leading-relaxed">
+                    <h3 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-sm)' }}>No hay partidos abiertos</h3>
+                    <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto var(--space-xl)', lineHeight: 1.6 }}>
                         Parece que ahora mismo no hay partidos buscando jugadores. Podés crear uno armando tu propio grupo desde tus reservas.
                     </p>
-                    <div className="flex gap-4">
-                        <Button variant="default" onClick={() => router.push('/search')} className="shadow-lg">
-                            <MapPin className="mr-2 h-4 w-4" /> Buscar Cancha
-                        </Button>
-                        <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                    <div style={{ display: 'flex', gap: 'var(--space-md)', justifyContent: 'center' }}>
+                        <button className="btn btn-primary" onClick={() => router.push('/search')} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-xs)' }}>
+                            <MapPin size={18} /> Buscar Cancha
+                        </button>
+                        <button className="btn btn-outline" onClick={() => router.push('/dashboard')}>
                             Ir al Panel
-                        </Button>
+                        </button>
                     </div>
                 </div>
             ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <div className="grid-2" style={{ gap: 'var(--space-lg)', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))' }}>
                     {matches.map((match) => (
-                        <Card key={match.id} className="overflow-hidden transition-all hover:shadow-md border-primary/10">
-                            <CardHeader className="bg-muted/30 pb-4">
-                                <div className="flex justify-between items-start mb-2">
-                                    <Badge variant="secondary" className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400">
+                        <div key={match.id} className="card" style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ background: 'var(--bg-secondary)', padding: 'var(--space-lg)', borderBottom: '1px solid var(--border-color)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-sm)' }}>
+                                    <span className="badge" style={{ background: 'var(--green-100)', color: 'var(--green-800)' }}>
                                         Buscando jugadores
-                                    </Badge>
-                                    <div className="flex items-center text-sm font-medium bg-background px-2 py-1 rounded-md shadow-sm border">
-                                        <Users className="w-4 h-4 mr-1 text-primary" />
-                                        {match.participants.length} / {match.maxPlayers}
+                                    </span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'var(--font-size-sm)', fontWeight: 600, background: 'var(--bg-primary)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--border-color)' }}>
+                                        <Users size={14} color="var(--blue-600)" />
+                                        {match.participants?.length || 0} / {match.maxPlayers}
                                     </div>
                                 </div>
-                                <CardTitle className="text-lg">
-                                    {match.booking.club.name}
-                                </CardTitle>
-                                <div className="flex items-center text-sm text-muted-foreground mt-2">
-                                    <MapPin className="w-4 h-4 mr-1" />
-                                    Cancha {match.booking.court.name}
+                                <h3 style={{ fontSize: 'var(--font-size-xl)', fontWeight: 700, marginBottom: 'var(--space-xs)' }}>
+                                    {match.booking?.court?.club?.name || 'Club'}
+                                </h3>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                                    <MapPin size={16} />
+                                    Cancha {match.booking?.court?.name || '-'}
                                 </div>
-                            </CardHeader>
+                            </div>
 
-                            <CardContent className="pt-4">
-                                <div className="space-y-3 mb-6">
-                                    <div className="flex items-center text-sm">
-                                        <Calendar className="w-4 h-4 mr-3 text-muted-foreground" />
-                                        <span className="capitalize">{format(new Date(match.booking.startAt), "EEEE d 'de' MMMM", { locale: es })}</span>
-                                    </div>
-                                    <div className="flex items-center text-sm">
-                                        <Clock className="w-4 h-4 mr-3 text-muted-foreground" />
-                                        <span>
-                                            {format(new Date(match.booking.startAt), "HH:mm")} - {format(new Date(match.booking.endAt), "HH:mm")}
+                            <div style={{ padding: 'var(--space-lg)', flex: 1, display: 'flex', flexDirection: 'column' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)', marginBottom: 'var(--space-lg)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--text-primary)', fontSize: 'var(--font-size-md)' }}>
+                                        <Calendar size={18} color="var(--text-muted)" />
+                                        <span style={{ textTransform: 'capitalize' }}>
+                                            {format(new Date(match.booking?.startAt || new Date()), "EEEE d 'de' MMMM", { locale: es })}
                                         </span>
                                     </div>
-                                    <div className="flex items-center text-sm">
-                                        <Trophy className="w-4 h-4 mr-3 text-muted-foreground" />
-                                        <span>Creado por: {match.createdBy.firstName} {match.createdBy.lastName}</span>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--text-primary)', fontSize: 'var(--font-size-md)' }}>
+                                        <Clock size={18} color="var(--text-muted)" />
+                                        <span>
+                                            {format(new Date(match.booking?.startAt || new Date()), "HH:mm")} - {format(new Date(match.booking?.endAt || new Date()), "HH:mm")}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-sm)', color: 'var(--text-primary)', fontSize: 'var(--font-size-md)' }}>
+                                        <Trophy size={18} color="var(--text-muted)" />
+                                        <span>Organiza: {match.createdBy?.player?.firstName || ''} {match.createdBy?.player?.lastName || ''}</span>
                                     </div>
 
                                     {match.notes && (
-                                        <div className="mt-4 p-3 bg-muted rounded-md text-sm italic text-muted-foreground border-l-2 border-primary">
+                                        <div style={{ marginTop: 'var(--space-sm)', padding: 'var(--space-sm) var(--space-md)', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-md)', borderLeft: '3px solid var(--blue-500)', fontSize: 'var(--font-size-sm)', fontStyle: 'italic', color: 'var(--text-secondary)' }}>
                                             "{match.notes}"
                                         </div>
                                     )}
                                 </div>
 
-                                <div className="flex items-center justify-between pt-4 border-t">
+                                <div style={{ marginTop: 'auto', paddingTop: 'var(--space-md)', borderTop: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                                     <div>
-                                        <p className="text-sm text-muted-foreground mb-1">Costo por jugador</p>
-                                        <p className="font-bold text-lg text-primary">
-                                            ${Math.ceil(match.booking.totalPrice / match.maxPlayers).toLocaleString('es-AR')}
-                                        </p>
+                                        <div style={{ fontSize: 'var(--font-size-xs)', color: 'var(--text-secondary)', marginBottom: '2px' }}>A pagar c/u</div>
+                                        <div style={{ fontSize: 'var(--font-size-xl)', fontWeight: 800, color: 'var(--blue-600)' }}>
+                                            ${Math.ceil((match.booking?.totalPrice || 0) / (match.maxPlayers || 4)).toLocaleString('es-AR')}
+                                        </div>
                                     </div>
-                                    <Button onClick={() => handleJoin(match.id)}>
+                                    <button className="btn btn-primary" onClick={() => handleJoin(match.id)}>
                                         Unirme
-                                    </Button>
+                                    </button>
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </div>
                     ))}
                 </div>
             )}
