@@ -124,6 +124,7 @@ router.get('/reports', async (req: AuthRequest, res: Response) => {
             totalClubs,
             pendingClubs,
             totalTournaments,
+            recentTournaments,
             recentMovements,
             pendingCorrections,
         ] = await Promise.all([
@@ -131,6 +132,7 @@ router.get('/reports', async (req: AuthRequest, res: Response) => {
             prisma.club.count(),
             prisma.club.count({ where: { status: ClubStatus.PENDING } }),
             prisma.tournament.count(),
+            prisma.tournament.findMany({ orderBy: { createdAt: 'desc' }, take: 20 }),
             prisma.pointMovement.findMany({
                 where: { voidedAt: null },
                 include: {
@@ -146,6 +148,7 @@ router.get('/reports', async (req: AuthRequest, res: Response) => {
 
         res.json({
             stats: { totalPlayers, totalClubs, pendingClubs, totalTournaments, pendingCorrections },
+            recentTournaments,
             recentMovements,
         });
     } catch (error: any) {
@@ -157,9 +160,16 @@ router.get('/reports', async (req: AuthRequest, res: Response) => {
 router.get('/corrections', async (req: AuthRequest, res: Response) => {
     try {
         const corrections = await prisma.correctionRequest.findMany({
+            where: {
+                OR: [
+                    { clubId: null },
+                    { escalatedToAdmin: true }
+                ]
+            },
             include: {
                 player: { select: { firstName: true, lastName: true, dni: true } },
                 user: { select: { email: true } },
+                club: { select: { name: true } }
             },
             orderBy: { createdAt: 'desc' },
         });

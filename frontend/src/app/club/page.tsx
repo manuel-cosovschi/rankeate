@@ -21,7 +21,8 @@ export default function ClubPage() {
     // Create tournament
     const [tName, setTName] = useState('');
     const [tDate, setTDate] = useState('');
-    const [tLevel, setTLevel] = useState('250');
+    const [tCategoryId, setTCategoryId] = useState('');
+    const [tGender, setTGender] = useState('MALE');
     const [tLocalityId, setTLocalityId] = useState('');
     const [localities, setLocalities] = useState<any[]>([]);
 
@@ -33,6 +34,33 @@ export default function ClubPage() {
     const [playerSearch, setPlayerSearch] = useState('');
     const [playerResults, setPlayerResults] = useState<any[]>([]);
     const [wizardPositions, setWizardPositions] = useState<Record<number, string>>({});
+
+    // Manage Tournament
+    const [managementTournament, setManagementTournament] = useState<any>(null);
+    const [inscriptions, setInscriptions] = useState<any[]>([]);
+    const [managementLoading, setManagementLoading] = useState(false);
+
+    const openManagement = async (t: any) => {
+        setManagementTournament(t);
+        setManagementLoading(true);
+        try {
+            const data = await api.getTournamentInscriptions(token!, t.id);
+            setInscriptions(data);
+        } catch (e: any) {
+            setMsg('Error cargando inscripciones: ' + e.message);
+        } finally {
+            setManagementLoading(false);
+        }
+    };
+
+    const updateInscription = async (insId: number, field: string, val: string) => {
+        try {
+            const updated = await api.updateTournamentInscription(token!, managementTournament.id, insId, { [field]: val || null });
+            setInscriptions(inscriptions.map(i => i.id === insId ? { ...i, ...updated } : i));
+        } catch (e: any) {
+            setMsg('Error actualizando inscripción: ' + e.message);
+        }
+    };
 
     useEffect(() => {
         if (!token) return;
@@ -63,7 +91,8 @@ export default function ClubPage() {
         e.preventDefault(); setMsg('');
         if (!token) return;
         try {
-            const t = await api.createTournament(token, { name: tName, date: tDate, level: tLevel, localityId: parseInt(tLocalityId) });
+            if (!tCategoryId) throw new Error('Debes seleccionar una categoría');
+            const t = await api.createTournament(token, { name: tName, startDate: tDate, categoryId: parseInt(tCategoryId), gender: tGender, localityId: parseInt(tLocalityId) });
             setTournaments([t, ...tournaments]); setTName(''); setTDate(''); setMsg('Torneo creado correctamente.');
         } catch (err: any) { setMsg(err.message); }
     };
@@ -249,7 +278,59 @@ export default function ClubPage() {
                 </div>
             )}
 
-            {!wizardTournament && (
+            {managementTournament && (
+                <div className="card" style={{ marginBottom: 'var(--space-xl)' }}>
+                    <div className="breadcrumb" style={{ marginBottom: 'var(--space-lg)' }}>
+                        <span style={{ cursor: 'pointer', color: 'var(--blue-600)' }} onClick={() => setManagementTournament(null)}>Club Panel</span>
+                        <span className="separator">/</span>
+                        <span>{managementTournament.name}</span>
+                        <span className="separator">/</span>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Gestión de Zonas y Llaves</span>
+                    </div>
+
+                    <h3 style={{ marginBottom: 'var(--space-md)' }}>Inscripciones ({inscriptions.length})</h3>
+                    {managementLoading ? (
+                        <div className="spinner"></div>
+                    ) : inscriptions.length === 0 ? (
+                        <div className="alert alert-info">No hay jugadores inscriptos a este torneo todavía.</div>
+                    ) : (
+                        <div className="table-container">
+                            <table className="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>JUGADOR</th>
+                                        <th>ZONA</th>
+                                        <th>LLAVE</th>
+                                        <th>ESTADO</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {inscriptions.map((ins: any) => (
+                                        <tr key={ins.id}>
+                                            <td style={{ fontWeight: 600 }}>{ins.player.firstName} {ins.player.lastName}</td>
+                                            <td>
+                                                <input className="form-input" style={{ maxWidth: '100px', padding: '0.2rem 0.5rem' }} placeholder="Ej: A" value={ins.zone || ''} onChange={(e) => updateInscription(ins.id, 'zone', e.target.value)} />
+                                            </td>
+                                            <td>
+                                                <input className="form-input" style={{ maxWidth: '150px', padding: '0.2rem 0.5rem' }} placeholder="Ej: 4tos" value={ins.bracketName || ''} onChange={(e) => updateInscription(ins.id, 'bracketName', e.target.value)} />
+                                            </td>
+                                            <td>
+                                                <select className="form-select" style={{ maxWidth: '120px', padding: '0.2rem 0.5rem' }} value={ins.status} onChange={(e) => updateInscription(ins.id, 'status', e.target.value)}>
+                                                    <option value="PENDING">Pendiente</option>
+                                                    <option value="ACCEPTED">Aceptado</option>
+                                                    <option value="REJECTED">Rechazado</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {!wizardTournament && !managementTournament && (
                 <>
                     <div className="tabs">
                         <button className={`tab ${activeTab === 'tournaments' ? 'active' : ''}`} onClick={() => setActiveTab('tournaments')}>Mis Torneos</button>
@@ -262,14 +343,26 @@ export default function ClubPage() {
                     </div>
 
                     {activeTab === 'config' && (
-                        <div className="card fade-in" style={{ maxWidth: '500px' }}>
-                            <h3 className="card-title">Configuración de Pagos</h3>
-                            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
-                                Ingresá tu Access Token de producción de Mercado Pago para que los jugadores te paguen directamente a tu cuenta al reservar canchas.
+                        <div className="card fade-in" style={{ maxWidth: '600px' }}>
+                            <h3 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                Vincular Cuenta de Cobros
+                            </h3>
+                            <p style={{ color: 'var(--text-secondary)', marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)', lineHeight: 1.5 }}>
+                                Para que los jugadores puedan pagarte la seña de las canchas o la inscripción a tus torneos, tenés que vincular tu cuenta de <strong>Mercado Pago</strong>.
                             </p>
+
+                            <div style={{ background: 'var(--bg-secondary)', padding: 'var(--space-md)', borderRadius: '8px', marginBottom: 'var(--space-md)', fontSize: 'var(--font-size-sm)' }}>
+                                <h4 style={{ fontWeight: 600, marginBottom: 'var(--space-xs)' }}>¿Cómo obtengo mi credencial?</h4>
+                                <ol style={{ paddingLeft: '1.2rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                    <li>Ingresá a <a href="https://www.mercadopago.com.ar/developers/panel/credentials" target="_blank" rel="noreferrer" style={{ color: 'var(--blue-600)', textDecoration: 'underline' }}>Panel de Developers</a> de Mercado Pago.</li>
+                                    <li>Creá una nueva aplicación o seleccioná una existente.</li>
+                                    <li>Copiá el <strong>Access Token</strong> (Credenciales de Producción) que empieza con <code style={{ background: '#e2e8f0', padding: '2px 4px', borderRadius: '4px' }}>APP_USR-</code>.</li>
+                                </ol>
+                            </div>
+
                             <form onSubmit={handleUpdateMpToken} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
                                 <div className="form-group">
-                                    <label className="form-label">Access Token (Prod)</label>
+                                    <label className="form-label">Access Token de Producción</label>
                                     <input
                                         className="form-input"
                                         type="password"
@@ -339,11 +432,14 @@ export default function ClubPage() {
                                                 <h3 style={{ fontWeight: 700, marginBottom: 'var(--space-xs)' }}>{t.name}</h3>
                                                 <div style={{ display: 'flex', gap: 'var(--space-md)', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                                                     <span>📅 {new Date(t.date || t.startDate).toLocaleDateString('es-AR')}</span>
-                                                    <span className={`badge-level badge-level-${t.level}`}>{t.level}</span>
+                                                    <span className="badge-category">{t.category?.name || 'Categoría'} - {t.gender === 'MALE' ? 'Caballeros' : t.gender === 'FEMALE' ? 'Damas' : 'Mixto'}</span>
                                                     <span>{statusBadge(t.status || 'DRAFT')}</span>
                                                 </div>
                                             </div>
-                                            <button className="btn btn-primary btn-sm" onClick={() => { setWizardTournament(t); setWizardStep(0); }}>Cargar Resultados</button>
+                                            <div style={{ display: 'flex', gap: 'var(--space-sm)' }}>
+                                                <button className="btn btn-secondary btn-sm" onClick={() => openManagement(t)}>Gestión</button>
+                                                <button className="btn btn-primary btn-sm" onClick={() => { setWizardTournament(t); setWizardStep(0); }}>Cargar Resultados</button>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -358,7 +454,8 @@ export default function ClubPage() {
                                 <div className="form-group"><label className="form-label">Nombre del Torneo</label><input className="form-input" value={tName} onChange={(e) => setTName(e.target.value)} required /></div>
                                 <div className="form-row">
                                     <div className="form-group"><label className="form-label">Fecha</label><input className="form-input" type="date" value={tDate} onChange={(e) => setTDate(e.target.value)} required /></div>
-                                    <div className="form-group"><label className="form-label">Nivel</label><select className="form-select" value={tLevel} onChange={(e) => setTLevel(e.target.value)}><option value="250">250</option><option value="500">500</option><option value="1000">1000</option></select></div>
+                                    <div className="form-group"><label className="form-label">Categoría</label><select className="form-select" value={tCategoryId} onChange={(e) => setTCategoryId(e.target.value)} required><option value="">Seleccionar</option>{categories.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}</select></div>
+                                    <div className="form-group"><label className="form-label">Género</label><select className="form-select" value={tGender} onChange={(e) => setTGender(e.target.value)}><option value="MALE">Caballeros</option><option value="FEMALE">Damas</option><option value="MIXED">Mixto</option></select></div>
                                 </div>
                                 <div className="form-group"><label className="form-label">Localidad</label><select className="form-select" value={tLocalityId} onChange={(e) => setTLocalityId(e.target.value)} required><option value="">Seleccionar</option>{localities.map((l: any) => <option key={l.id} value={l.id}>{l.name}</option>)}</select></div>
                                 <button type="submit" className="btn btn-primary">Crear Torneo</button>

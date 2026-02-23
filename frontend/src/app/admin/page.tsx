@@ -25,12 +25,13 @@ export default function AdminPage() {
         if (!token) return;
         Promise.all([
             api.getPendingClubs(token).catch(() => []),
-            api.getRecentMovements(token).catch(() => []),
-            api.getRecentTournaments(token).catch(() => []),
+            api.getReports(token).catch(() => ({ stats: {}, recentMovements: [], recentTournaments: [] })),
             api.getCorrections(token).catch(() => []),
-        ]).then(([clubs, movements, tournaments, corrs]) => {
-            setPendingClubs(clubs || []); setRecentMovements(movements || []);
-            setRecentTournaments(tournaments || []); setCorrections(corrs || []);
+        ]).then(([clubs, reports, corrs]) => {
+            setPendingClubs(Array.isArray(clubs) ? clubs : []);
+            setRecentMovements(Array.isArray(reports?.recentMovements) ? reports.recentMovements : []);
+            setRecentTournaments(Array.isArray(reports?.recentTournaments) ? reports.recentTournaments : []);
+            setCorrections(Array.isArray(corrs) ? corrs : []);
         }).finally(() => setLoading(false));
     }, [token]);
 

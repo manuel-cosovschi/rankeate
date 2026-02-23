@@ -67,7 +67,7 @@ router.get('/:id', async (req, res: Response) => {
                 pointMovements: {
                     where: { voidedAt: null },
                     include: {
-                        tournament: { select: { id: true, name: true, level: true, startDate: true } },
+                        tournament: { select: { id: true, name: true, categoryId: true, gender: true, startDate: true } },
                         category: { select: { name: true } },
                     },
                     orderBy: { createdAt: 'desc' },
@@ -76,7 +76,7 @@ router.get('/:id', async (req, res: Response) => {
                     include: {
                         result: {
                             include: {
-                                tournament: { select: { id: true, name: true, level: true, startDate: true } },
+                                tournament: { select: { id: true, name: true, categoryId: true, gender: true, startDate: true } },
                                 category: { select: { name: true } },
                             },
                         },
@@ -134,7 +134,8 @@ router.get('/:id', async (req, res: Response) => {
             tournaments: player.resultEntries.map((e) => ({
                 tournamentId: e.result.tournament.id,
                 tournamentName: e.result.tournament.name,
-                level: e.result.tournament.level,
+                categoryId: e.result.tournament.categoryId,
+                gender: e.result.tournament.gender,
                 date: e.result.tournament.startDate,
                 category: e.result.category.name,
                 position: e.finishPosition,
@@ -163,7 +164,7 @@ router.put('/me', authMiddleware, roleMiddleware('PLAYER'), async (req: AuthRequ
             return;
         }
 
-        const { firstName, lastName, handedness, preferredSide, localityId, categoryId, phone, birthDate } = req.body;
+        const { firstName, lastName, handedness, preferredSide, localityId, categoryId, phone, birthDate, avatarUrl, gender } = req.body;
 
         const updated = await prisma.player.update({
             where: { id: player.id },
@@ -176,6 +177,8 @@ router.put('/me', authMiddleware, roleMiddleware('PLAYER'), async (req: AuthRequ
                 ...(categoryId && { currentCategoryId: categoryId }),
                 ...(phone !== undefined && { phone }),
                 ...(birthDate && { birthDate: new Date(birthDate) }),
+                ...(avatarUrl !== undefined && { avatarUrl }),
+                ...(gender && { gender }),
             },
             include: { locality: true, currentCategory: true },
         });
@@ -199,7 +202,7 @@ router.get('/me/history', authMiddleware, roleMiddleware('PLAYER'), async (req: 
         const movements = await prisma.pointMovement.findMany({
             where: { playerId: player.id },
             include: {
-                tournament: { select: { name: true, level: true, startDate: true } },
+                tournament: { select: { name: true, categoryId: true, gender: true, startDate: true } },
                 category: { select: { name: true } },
             },
             orderBy: { createdAt: 'desc' },
@@ -208,6 +211,45 @@ router.get('/me/history', authMiddleware, roleMiddleware('PLAYER'), async (req: 
         res.json(movements);
     } catch (error: any) {
         res.status(500).json({ error: 'Error al obtener historial' });
+    }
+});
+
+// ─── Explore Open Matches and Upcoming Tournaments ──────
+router.get('/explore', authMiddleware, roleMiddleware('PLAYER'), async (req: AuthRequest, res: Response) => {
+    try {
+        const player = await prisma.player.findUnique({ where: { userId: req.user!.userId } });
+        if (!player) { res.status(404).json({ error: 'Perfil no encontrado' }); return; }
+
+        const localityId = req.query.localityId ? parseInt(req.query.localityId as string) : player.localityId;
+
+        const upcomingTournaments = await prisma.tournament.findMany({
+            where: {
+                localityId,
+                status: 'CONFIRMED',
+                startDate: { gte: new Date() }
+            },
+            include: { club: { select: { name: true } }, category: true },
+            orderBy: { startDate: 'asc' },
+            take: 20
+        });
+
+        const openMatches = await prisma.match.findMany({
+            where: {
+                status: 'OPEN',
+                booking: { court: { club: { localityId } } }
+            },
+            include: {
+                createdBy: { select: { player: { select: { firstName: true, lastName: true, reliabilityScore: true } } } },
+                booking: { include: { court: { include: { club: { select: { name: true } } } } } }
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 20
+        });
+
+        res.json({ tournaments: upcomingTournaments, matches: openMatches });
+    } catch (error: any) {
+        console.error('Explore error:', error);
+        res.status(500).json({ error: 'Error al explorar' });
     }
 });
 

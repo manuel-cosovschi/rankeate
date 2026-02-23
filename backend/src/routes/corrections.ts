@@ -10,7 +10,7 @@ router.use(roleMiddleware('PLAYER'));
 // ─── Submit correction request ──────────────────────
 router.post('/', async (req: AuthRequest, res: Response) => {
     try {
-        const { message } = req.body;
+        const { message, clubId } = req.body;
         if (!message || message.trim().length < 10) {
             res.status(400).json({ error: 'El mensaje debe tener al menos 10 caracteres' });
             return;
@@ -26,6 +26,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
             data: {
                 playerUserId: req.user!.userId,
                 playerId: player.id,
+                clubId: clubId ? parseInt(clubId) : null,
                 message: message.trim(),
             },
         });

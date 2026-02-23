@@ -11,6 +11,7 @@ import correctionsRoutes from './routes/corrections';
 import courtsRoutes from './routes/courts';
 import bookingsRoutes from './routes/bookings';
 import paymentsRoutes from './routes/payments';
+import matchesRoutes from './routes/matches';
 import { startScheduler } from './scheduler';
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/corrections', correctionsRoutes);
 app.use('/api/courts', courtsRoutes);
 app.use('/api/bookings', bookingsRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/matches', matchesRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

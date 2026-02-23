@@ -6,7 +6,7 @@ import { validate } from '../middleware/validate';
 import { calculatePoints } from '../services/points';
 import { checkPromotionsForPlayers } from '../services/promotion';
 import { logAudit } from '../services/audit';
-import { ClubStatus, ResultStatus, TournamentStatus, TournamentLevel, FinishPosition, BookingStatus } from '@prisma/client';
+import { ClubStatus, ResultStatus, TournamentStatus, FinishPosition, BookingStatus } from '@prisma/client';
 
 const router = Router();
 
@@ -24,7 +24,7 @@ router.get('/me', async (req: AuthRequest, res: Response) => {
                 tournaments: {
                     include: {
                         locality: true,
-                        categories: { include: { category: true } },
+                        category: true,
                     },
                     orderBy: { startDate: 'desc' },
                 },
@@ -62,12 +62,12 @@ router.put('/me/token', async (req: AuthRequest, res: Response) => {
 const createTournamentSchema = z.object({
     name: z.string().min(3),
     localityId: z.number().int().positive(),
-    level: z.enum(['LOCAL_250', 'REGIONAL_500', 'OPEN_1000']),
+    categoryId: z.number().int().positive(),
+    gender: z.enum(['MALE', 'FEMALE', 'MIXED']),
     startDate: z.string(),
     endDate: z.string().optional(),
     surface: z.string().optional(),
     observations: z.string().optional(),
-    categoryIds: z.array(z.number().int().positive()).min(1),
 });
 
 router.post('/tournaments', validate(createTournamentSchema), async (req: AuthRequest, res: Response) => {
@@ -82,29 +82,30 @@ router.post('/tournaments', validate(createTournamentSchema), async (req: AuthRe
             return;
         }
 
-        const { name, localityId, level, startDate, endDate, surface, observations, categoryIds } = req.body;
+        const { name, localityId, categoryId, gender, startDate, endDate, surface, observations } = req.body;
 
         const tournament = await prisma.tournament.create({
             data: {
                 clubId: club.id,
                 name,
                 localityId,
-                level: level as TournamentLevel,
+                categoryId,
+                gender,
                 startDate: new Date(startDate),
                 endDate: endDate ? new Date(endDate) : null,
                 surface: surface || null,
                 observations: observations || null,
                 categories: {
-                    create: categoryIds.map((catId: number) => ({ categoryId: catId })),
+                    create: [{ categoryId }],
                 },
             },
             include: {
-                categories: { include: { category: true } },
+                category: true,
                 locality: true,
             },
         });
 
-        await logAudit(req.user!.userId, 'CREATE_TOURNAMENT', 'tournament', tournament.id, { name, level });
+        await logAudit(req.user!.userId, 'CREATE_TOURNAMENT', 'tournament', tournament.id, { name, categoryId, gender });
 
         res.status(201).json(tournament);
     } catch (error: any) {
@@ -127,7 +128,7 @@ router.get('/tournaments/:id', async (req: AuthRequest, res: Response) => {
             where: { id, clubId: club.id },
             include: {
                 locality: true,
-                categories: { include: { category: true } },
+                category: true,
                 results: {
                     include: {
                         category: true,
@@ -147,6 +148,67 @@ router.get('/tournaments/:id', async (req: AuthRequest, res: Response) => {
         res.json(tournament);
     } catch (error: any) {
         res.status(500).json({ error: 'Error al obtener torneo' });
+    }
+});
+
+// ─── Manage Inscriptions (Phase 4) ──────────────────────
+router.get('/tournaments/:id/inscriptions', async (req: AuthRequest, res: Response) => {
+    try {
+        const tournamentId = parseInt(req.params.id);
+        const club = await prisma.club.findUnique({ where: { userId: req.user!.userId } });
+        if (!club) { res.status(404).json({ error: 'Club no encontrado' }); return; }
+
+        const tournament = await prisma.tournament.findFirst({
+            where: { id: tournamentId, clubId: club.id },
+        });
+        if (!tournament) { res.status(404).json({ error: 'Torneo no encontrado' }); return; }
+
+        const inscriptions = await prisma.tournamentInscription.findMany({
+            where: { tournamentId },
+            include: { player: { select: { id: true, firstName: true, lastName: true, dni: true } } },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        res.json(inscriptions);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Error al obtener inscripciones' });
+    }
+});
+
+const updateInscriptionSchema = z.object({
+    zone: z.string().nullable().optional(),
+    bracketName: z.string().nullable().optional(),
+    status: z.enum(['PENDING', 'ACCEPTED', 'REJECTED']).optional(),
+});
+
+router.put('/tournaments/:id/inscriptions/:inscriptionId', validate(updateInscriptionSchema), async (req: AuthRequest, res: Response) => {
+    try {
+        const tournamentId = parseInt(req.params.id);
+        const inscriptionId = parseInt(req.params.inscriptionId);
+
+        const club = await prisma.club.findUnique({ where: { userId: req.user!.userId } });
+        if (!club) { res.status(404).json({ error: 'Club no encontrado' }); return; }
+
+        const tournament = await prisma.tournament.findFirst({
+            where: { id: tournamentId, clubId: club.id },
+        });
+        if (!tournament) { res.status(404).json({ error: 'Torneo no encontrado' }); return; }
+
+        const { zone, bracketName, status } = req.body;
+
+        const updated = await prisma.tournamentInscription.update({
+            where: { id: inscriptionId, tournamentId },
+            data: {
+                ...(zone !== undefined && { zone }),
+                ...(bracketName !== undefined && { bracketName }),
+                ...(status !== undefined && { status }),
+            },
+            include: { player: { select: { id: true, firstName: true, lastName: true } } }
+        });
+
+        res.json(updated);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Error al actualizar inscripción' });
     }
 });
 
@@ -278,7 +340,7 @@ router.post('/tournaments/:id/results/confirm', async (req: AuthRequest, res: Re
 
         // Calculate and create point movements
         const pointMovements = result.entries.map((entry) => {
-            const points = calculatePoints(tournament.level, entry.finishPosition);
+            const points = calculatePoints(entry.finishPosition);
             return {
                 playerId: entry.playerId,
                 tournamentId,
@@ -428,6 +490,69 @@ router.get('/me/analytics', authMiddleware, roleMiddleware('CLUB'), async (req: 
     } catch (error) {
         console.error('Fetch analytics error:', error);
         res.status(500).json({ error: 'Error al obtener estadísticas' });
+    }
+});
+
+// ─── Club Corrections / Disputes ─────────────────────────
+router.get('/me/corrections', async (req: AuthRequest, res: Response) => {
+    try {
+        const club = await prisma.club.findUnique({ where: { userId: req.user!.userId } });
+        if (!club) { res.status(404).json({ error: 'Club no encontrado' }); return; }
+
+        const corrections = await prisma.correctionRequest.findMany({
+            where: {
+                clubId: club.id,
+                escalatedToAdmin: false
+            },
+            include: {
+                player: { select: { firstName: true, lastName: true, dni: true } },
+                user: { select: { email: true } },
+            },
+            orderBy: { createdAt: 'desc' },
+        });
+
+        res.json(corrections);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Error al obtener correcciones del club' });
+    }
+});
+
+router.post('/me/corrections/:id/resolve', async (req: AuthRequest, res: Response) => {
+    try {
+        const id = parseInt(req.params.id);
+        const { status, adminResponse } = req.body;
+
+        const club = await prisma.club.findUnique({ where: { userId: req.user!.userId } });
+        if (!club) { res.status(404).json({ error: 'Club no encontrado' }); return; }
+
+        const correction = await prisma.correctionRequest.findFirst({
+            where: { id, clubId: club.id, escalatedToAdmin: false }
+        });
+
+        if (!correction) {
+            res.status(404).json({ error: 'Corrección no encontrada o ya escalada' });
+            return;
+        }
+
+        if (!status || !['RESOLVED', 'REJECTED'].includes(status)) {
+            res.status(400).json({ error: 'Estado inválido' });
+            return;
+        }
+
+        const updated = await prisma.correctionRequest.update({
+            where: { id },
+            data: {
+                status: status,
+                adminResponse: adminResponse || null,
+                resolvedAt: new Date(),
+            },
+        });
+
+        await logAudit(req.user!.userId, 'CLUB_RESOLVE_CORRECTION', 'correction_request', id, { status, adminResponse });
+
+        res.json(updated);
+    } catch (error: any) {
+        res.status(500).json({ error: 'Error al resolver corrección' });
     }
 });
 

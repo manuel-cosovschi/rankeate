@@ -64,6 +64,8 @@ export const api = {
         apiFetch('/players/me', { method: 'PUT', token, body: JSON.stringify(data) }),
     getMyHistory: (token: string) =>
         apiFetch('/players/me/history', { token }),
+    getExplore: (token: string, localityId?: string) =>
+        apiFetch(`/players/explore${localityId ? `?localityId=${localityId}` : ''}`, { token }),
     submitCorrection: (token: string, message: string) =>
         apiFetch('/corrections', { method: 'POST', token, body: JSON.stringify({ message }) }),
     getMyCorrections: (token: string) =>
@@ -99,8 +101,12 @@ export const api = {
         apiFetch('/clubs/tournaments', { token }),
     createTournament: (token: string, data: any) =>
         apiFetch('/clubs/tournaments', { method: 'POST', token, body: JSON.stringify(data) }),
-    getTournament: (token: string, id: number) =>
+    getTournamentDetails: (token: string, id: number) =>
         apiFetch(`/clubs/tournaments/${id}`, { token }),
+    getTournamentInscriptions: (token: string, id: number) =>
+        apiFetch(`/clubs/tournaments/${id}/inscriptions`, { token }),
+    updateTournamentInscription: (token: string, tournamentId: number, inscriptionId: number, data: any) =>
+        apiFetch(`/clubs/tournaments/${tournamentId}/inscriptions/${inscriptionId}`, { method: 'PUT', token, body: JSON.stringify(data) }),
     submitResults: (token: string, tournamentId: number, data: any) =>
         apiFetch(`/clubs/tournaments/${tournamentId}/results`, { method: 'POST', token, body: JSON.stringify(data) }),
     confirmResults: (token: string, tournamentId: number, categoryId: number) =>

@@ -18,8 +18,11 @@ export default function LoginPage() {
         setError('');
         setLoading(true);
         try {
-            await login(email, password);
-            router.push('/');
+            const loggedInUser = await login(email, password);
+            if (loggedInUser.role === 'PLAYER') router.push('/dashboard');
+            else if (loggedInUser.role === 'CLUB') router.push('/club');
+            else if (loggedInUser.role === 'ADMIN') router.push('/admin');
+            else router.push('/');
         } catch (err: any) {
             setError(err.message || 'Error al iniciar sesión');
         } finally {

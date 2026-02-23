@@ -14,8 +14,21 @@ export default function DashboardPage() {
     const [phone, setPhone] = useState('');
     const [handedness, setHandedness] = useState('RIGHT');
     const [preferredSide, setPreferredSide] = useState('DRIVE');
+    const [gender, setGender] = useState('MALE');
+    const [avatarUrl, setAvatarUrl] = useState('');
     const [correctionText, setCorrectionText] = useState('');
     const [msg, setMsg] = useState('');
+
+    // Explore Marketplace
+    const [exploreLoading, setExploreLoading] = useState(false);
+    const [exploreMatches, setExploreMatches] = useState<any[]>([]);
+    const [exploreTournaments, setExploreTournaments] = useState<any[]>([]);
+    const [exploreLocality, setExploreLocality] = useState('');
+    const [localities, setLocalities] = useState<any[]>([]);
+
+    useEffect(() => {
+        api.getLocalities().then(setLocalities).catch(() => { });
+    }, []);
 
     useEffect(() => {
         if (playerData) {
@@ -24,6 +37,8 @@ export default function DashboardPage() {
             setPhone(playerData.phone || '');
             setHandedness(playerData.handedness || 'RIGHT');
             setPreferredSide(playerData.preferredSide || 'DRIVE');
+            setGender(playerData.gender || 'MALE');
+            setAvatarUrl(playerData.avatarUrl || '');
         }
         if (token) {
             api.getMyHistory(token)
@@ -34,10 +49,34 @@ export default function DashboardPage() {
         }
     }, [playerData, token]);
 
+    useEffect(() => {
+        if (activeTab === 'explore' && token) {
+            setExploreLoading(true);
+            api.getExplore(token, exploreLocality || undefined)
+                .then(res => {
+                    setExploreTournaments(res.tournaments || []);
+                    setExploreMatches(res.matches || []);
+                })
+                .catch(console.error)
+                .finally(() => setExploreLoading(false));
+        }
+    }, [activeTab, exploreLocality, token]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setAvatarUrl(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
     const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault(); setMsg('');
         if (!token) return;
-        try { await api.updateProfile(token, { firstName, lastName, phone, handedness, preferredSide }); setMsg('Perfil actualizado correctamente.'); }
+        try { await api.updateProfile(token, { firstName, lastName, phone, handedness, preferredSide, gender, avatarUrl }); setMsg('Perfil actualizado correctamente.'); }
         catch (err: any) { setMsg(err.message || 'Error al actualizar'); }
     };
 
@@ -116,11 +155,82 @@ export default function DashboardPage() {
 
             <div className="tabs">
                 <button className={`tab ${activeTab === 'profile' ? 'active' : ''}`} onClick={() => setActiveTab('profile')}>Editar Perfil</button>
+                <button className={`tab ${activeTab === 'explore' ? 'active' : ''}`} onClick={() => setActiveTab('explore')}>Explorar</button>
                 <button className={`tab ${activeTab === 'history' ? 'active' : ''}`} onClick={() => setActiveTab('history')}>Historial</button>
                 <button className={`tab ${activeTab === 'corrections' ? 'active' : ''}`} onClick={() => setActiveTab('corrections')}>Correcciones</button>
                 <button className={`tab ${activeTab === 'howto' ? 'active' : ''}`} onClick={() => setActiveTab('howto')}>Cómo Funciona</button>
                 <button className={`tab ${activeTab === 'terms' ? 'active' : ''}`} onClick={() => setActiveTab('terms')}>Términos</button>
             </div>
+
+            {activeTab === 'explore' && (
+                <div className="fade-in">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-md)' }}>
+                        <h3 className="card-title" style={{ margin: 0 }}>🔍 Buscar en tu zona</h3>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Localidad:</span>
+                            <select className="form-select" style={{ minWidth: '200px', padding: '0.25rem 0.5rem' }} value={exploreLocality} onChange={e => setExploreLocality(e.target.value)}>
+                                <option value="">Mi Localidad Default</option>
+                                {localities.map(l => <option key={l.id} value={l.id}>{l.name} - {l.province}</option>)}
+                            </select>
+                        </div>
+                    </div>
+
+                    {exploreLoading ? <div className="spinner" style={{ margin: '2rem auto' }}></div> : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-xl)' }}>
+                            {/* Torneos */}
+                            <div>
+                                <h4 style={{ marginBottom: 'var(--space-sm)', color: 'var(--blue-700)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🏆 Próximos Torneos</h4>
+                                {exploreTournaments.length === 0 ? (
+                                    <div className="alert alert-info" style={{ fontSize: '0.9rem' }}>No hay torneos próximos en esta localidad.</div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-md)' }}>
+                                        {exploreTournaments.map((t: any) => (
+                                            <div key={t.id} className="card" style={{ padding: 'var(--space-md)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                    <h4 style={{ margin: 0 }}>{t.name}</h4>
+                                                    <span className="badge badge-primary">{t.category?.name || 'Cat'}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <span>📍 {t.club?.name}</span>
+                                                    <span>📅 {new Date(t.startDate).toLocaleDateString('es-AR')}</span>
+                                                    <span>👥 {t.gender === 'MALE' ? 'Caballeros' : t.gender === 'FEMALE' ? 'Damas' : 'Mixto'}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Partidos */}
+                            <div>
+                                <h4 style={{ marginBottom: 'var(--space-sm)', color: 'var(--green-700)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🎾 Partidos Abiertos</h4>
+                                {exploreMatches.length === 0 ? (
+                                    <div className="alert alert-info" style={{ fontSize: '0.9rem' }}>No hay partidos abiertos. ¡Creá uno desde el buscador de canchas!</div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-md)' }}>
+                                        {exploreMatches.map((m: any) => (
+                                            <div key={m.id} className="card" style={{ padding: 'var(--space-md)', borderTop: '4px solid var(--green-500)' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                        <div className="avatar avatar-sm avatar-blue">{m.createdBy?.player?.firstName?.[0] || 'U'}</div>
+                                                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{m.createdBy?.player?.firstName} {m.createdBy?.player?.lastName}</div>
+                                                    </div>
+                                                    <span className="badge" style={{ background: 'var(--green-100)', color: 'var(--green-800)' }}>Abierto</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                                    <span>📍 {m.booking?.court?.club?.name} - Cancha {m.booking?.court?.name}</span>
+                                                    <span>📅 {new Date(m.booking?.date).toLocaleDateString('es-AR')} - {m.booking?.startTime}hs</span>
+                                                    {m.notes && <span style={{ fontStyle: 'italic', marginTop: '0.25rem' }}>💬 "{m.notes}"</span>}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
 
             {activeTab === 'profile' && (
                 <div className="card fade-in">
@@ -130,7 +240,23 @@ export default function DashboardPage() {
                             <div className="form-group"><label className="form-label">Nombre</label><input className="form-input" value={firstName} onChange={(e) => setFirstName(e.target.value)} /></div>
                             <div className="form-group"><label className="form-label">Apellido</label><input className="form-input" value={lastName} onChange={(e) => setLastName(e.target.value)} /></div>
                         </div>
-                        <div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                        <div className="form-group">
+                            <label className="form-label">Foto de Perfil</label>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                                {avatarUrl ? <img src={avatarUrl} alt="Avatar" style={{ width: 64, height: 64, borderRadius: '50%', objectFit: 'cover' }} /> : <div className="avatar avatar-blue" style={{ width: 64, height: 64, fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}>{firstName?.[0] || 'U'}</div>}
+                                <input type="file" accept="image/*" onChange={handleFileChange} className="form-input" style={{ flex: 1 }} />
+                            </div>
+                        </div>
+                        <div className="form-row">
+                            <div className="form-group"><label className="form-label">Teléfono</label><input className="form-input" value={phone} onChange={(e) => setPhone(e.target.value)} /></div>
+                            <div className="form-group">
+                                <label className="form-label">Género</label>
+                                <select className="form-select" value={gender} onChange={(e) => setGender(e.target.value)}>
+                                    <option value="MALE">Caballero</option>
+                                    <option value="FEMALE">Dama</option>
+                                </select>
+                            </div>
+                        </div>
                         <div className="form-row">
                             <div className="form-group"><label className="form-label">Mano Hábil</label><select className="form-select" value={handedness} onChange={(e) => setHandedness(e.target.value)}><option value="RIGHT">Diestro</option><option value="LEFT">Zurdo</option><option value="AMBIDEXTROUS">Ambidiestro</option></select></div>
                             <div className="form-group"><label className="form-label">Lado Preferido</label><select className="form-select" value={preferredSide} onChange={(e) => setPreferredSide(e.target.value)}><option value="DRIVE">Drive</option><option value="REVES">Revés</option><option value="BOTH">Ambos</option></select></div>

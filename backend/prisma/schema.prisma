@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -70,50 +70,58 @@ enum CorrectionStatus {
 
 // ─── Auth / Users ────────────────────────────────────────
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  passwordHash  String    @map("password_hash")
-  role          UserRole  @default(PLAYER)
-  refreshToken  String?   @map("refresh_token")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  role         UserRole @default(PLAYER)
+  refreshToken String?  @map("refresh_token")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
-  player               Player?
-  club                 Club?
-  pointMovementsCreated PointMovement[]   @relation("CreatedBy")
-  pointMovementsVoided  PointMovement[]   @relation("VoidedBy")
-  resultsConfirmed      TournamentResult[] @relation("ConfirmedBy")
-  auditLogs            AuditLog[]
-  corrections          CorrectionRequest[]
-  bookingsCreated      Booking[]          @relation("BookingsCreated")
-  paymentsPaid         Payment[]          @relation("PaymentsPaid")
+  player                Player?
+  club                  Club?
+  pointMovementsCreated PointMovement[]     @relation("CreatedBy")
+  pointMovementsVoided  PointMovement[]     @relation("VoidedBy")
+  resultsConfirmed      TournamentResult[]  @relation("ConfirmedBy")
+  auditLogs             AuditLog[]
+  corrections           CorrectionRequest[]
+  bookingsCreated       Booking[]           @relation("BookingsCreated")
+  paymentsPaid          Payment[]           @relation("PaymentsPaid")
+  matchesCreated        Match[]             @relation("MatchesCreated")
+  resultsSubmitted      MatchResultEntry[]  @relation("ResultsSubmitted")
 
   @@map("users")
 }
 
 // ─── Players ─────────────────────────────────────────────
 model Player {
-  id                Int            @id @default(autoincrement())
-  userId            Int?           @unique @map("user_id")
-  dni               String         @unique
-  firstName         String         @map("first_name")
-  lastName          String         @map("last_name")
-  birthDate         DateTime?      @map("birth_date") @db.Date
+  id                Int           @id @default(autoincrement())
+  userId            Int?          @unique @map("user_id")
+  dni               String        @unique
+  firstName         String        @map("first_name")
+  lastName          String        @map("last_name")
+  birthDate         DateTime?     @map("birth_date") @db.Date
   phone             String?
-  gender            Gender         @default(MALE)
-  handedness        Handedness     @default(RIGHT)
-  preferredSide     PreferredSide  @default(DRIVE) @map("preferred_side")
-  localityId        Int            @map("locality_id")
-  currentCategoryId Int            @map("current_category_id")
-  createdAt         DateTime       @default(now()) @map("created_at")
-  updatedAt         DateTime       @updatedAt @map("updated_at")
+  gender            Gender        @default(MALE)
+  handedness        Handedness    @default(RIGHT)
+  preferredSide     PreferredSide @default(DRIVE) @map("preferred_side")
+  localityId        Int           @map("locality_id")
+  currentCategoryId Int           @map("current_category_id")
+  avatarUrl         String?       @map("avatar_url") @db.Text
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
 
-  user              User?          @relation(fields: [userId], references: [id])
-  locality          Locality       @relation(fields: [localityId], references: [id])
-  currentCategory   Category       @relation(fields: [currentCategoryId], references: [id])
+  user              User?                   @relation(fields: [userId], references: [id])
+  locality          Locality                @relation(fields: [localityId], references: [id])
+  currentCategory   Category                @relation(fields: [currentCategoryId], references: [id])
   resultEntries     TournamentResultEntry[]
   pointMovements    PointMovement[]
   corrections       CorrectionRequest[]
+  matchParticipants MatchParticipant[]
+  reliabilityEvents ReliabilityEvent[]
+  reliabilityScore  Int                     @default(100) @map("reliability_score")
+  reliabilityStatus String                  @default("OK") @map("reliability_status")
+  inscriptions      TournamentInscription[]
 
   @@index([localityId, currentCategoryId])
   @@index([lastName])
@@ -137,50 +145,78 @@ model Club {
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
-  user        User       @relation(fields: [userId], references: [id])
-  locality    Locality   @relation(fields: [localityId], references: [id])
-  tournaments Tournament[]
-  courts      Court[]
-  bookings    Booking[]
-  mpAccessToken String?    @map("mp_access_token")
+  user          User                @relation(fields: [userId], references: [id])
+  locality      Locality            @relation(fields: [localityId], references: [id])
+  tournaments   Tournament[]
+  courts        Court[]
+  bookings      Booking[]
+  mpAccessToken String?             @map("mp_access_token")
+  corrections   CorrectionRequest[]
 
   @@map("clubs")
 }
 
 // ─── Tournaments ─────────────────────────────────────────
 model Tournament {
-  id          Int              @id @default(autoincrement())
-  clubId      Int              @map("club_id")
-  name        String
-  localityId  Int              @map("locality_id")
-  level       TournamentLevel  @default(LOCAL_250)
-  startDate   DateTime         @map("start_date") @db.Date
-  endDate     DateTime?        @map("end_date") @db.Date
-  surface     String?
+  id           Int              @id @default(autoincrement())
+  clubId       Int              @map("club_id")
+  name         String
+  localityId   Int              @map("locality_id")
+  categoryId   Int?             @map("category_id")
+  gender       Gender           @default(MALE)
+  startDate    DateTime         @map("start_date") @db.Date
+  endDate      DateTime?        @map("end_date") @db.Date
+  surface      String?
   observations String?
-  status      TournamentStatus @default(DRAFT)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
+  status       TournamentStatus @default(DRAFT)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
 
-  club        Club             @relation(fields: [clubId], references: [id])
-  locality    Locality         @relation(fields: [localityId], references: [id])
-  categories  TournamentCategory[]
-  results     TournamentResult[]
+  club           Club                    @relation(fields: [clubId], references: [id])
+  locality       Locality                @relation(fields: [localityId], references: [id])
+  category       Category?               @relation(fields: [categoryId], references: [id])
+  categories     TournamentCategory[]
+  results        TournamentResult[]
   pointMovements PointMovement[]
+  inscriptions   TournamentInscription[]
 
   @@map("tournaments")
 }
 
 model TournamentCategory {
-  id           Int        @id @default(autoincrement())
-  tournamentId Int        @map("tournament_id")
-  categoryId   Int        @map("category_id")
+  id           Int @id @default(autoincrement())
+  tournamentId Int @map("tournament_id")
+  categoryId   Int @map("category_id")
 
-  tournament   Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  category     Category   @relation(fields: [categoryId], references: [id])
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category   Category   @relation(fields: [categoryId], references: [id])
 
   @@unique([tournamentId, categoryId])
   @@map("tournament_categories")
+}
+
+// ─── Tournaments & Inscriptions ──────────────────────────
+
+enum InscriptionStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model TournamentInscription {
+  id           Int               @id @default(autoincrement())
+  tournamentId Int               @map("tournament_id")
+  playerId     Int               @map("player_id")
+  status       InscriptionStatus @default(PENDING)
+  zone         String? // For Phase 4 basic bracket/zone management
+  bracketName  String?           @map("bracket_name")
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  player     Player     @relation(fields: [playerId], references: [id])
+
+  @@unique([tournamentId, playerId])
+  @@map("tournament_inscriptions")
 }
 
 // ─── Results ─────────────────────────────────────────────
@@ -192,23 +228,23 @@ model TournamentResult {
   confirmedAt  DateTime?    @map("confirmed_at")
   confirmedBy  Int?         @map("confirmed_by")
 
-  tournament   Tournament   @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
-  category     Category     @relation(fields: [categoryId], references: [id])
-  confirmer    User?        @relation("ConfirmedBy", fields: [confirmedBy], references: [id])
-  entries      TournamentResultEntry[]
+  tournament Tournament              @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  category   Category                @relation(fields: [categoryId], references: [id])
+  confirmer  User?                   @relation("ConfirmedBy", fields: [confirmedBy], references: [id])
+  entries    TournamentResultEntry[]
 
   @@unique([tournamentId, categoryId])
   @@map("tournament_results")
 }
 
 model TournamentResultEntry {
-  id              Int            @id @default(autoincrement())
-  resultId        Int            @map("result_id")
-  playerId        Int            @map("player_id")
-  finishPosition  FinishPosition @map("finish_position")
+  id             Int            @id @default(autoincrement())
+  resultId       Int            @map("result_id")
+  playerId       Int            @map("player_id")
+  finishPosition FinishPosition @map("finish_position")
 
-  result          TournamentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
-  player          Player           @relation(fields: [playerId], references: [id])
+  result TournamentResult @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  player Player           @relation(fields: [playerId], references: [id])
 
   @@unique([resultId, playerId])
   @@map("tournament_result_entries")
@@ -216,23 +252,23 @@ model TournamentResultEntry {
 
 // ─── Points ──────────────────────────────────────────────
 model PointMovement {
-  id             Int       @id @default(autoincrement())
-  playerId       Int       @map("player_id")
-  tournamentId   Int       @map("tournament_id")
-  categoryId     Int       @map("category_id")
-  points         Int
-  reason         String
-  createdByUserId Int      @map("created_by_user_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  voidedAt       DateTime? @map("voided_at")
-  voidedBy       Int?      @map("voided_by")
-  voidReason     String?   @map("void_reason")
+  id              Int       @id @default(autoincrement())
+  playerId        Int       @map("player_id")
+  tournamentId    Int       @map("tournament_id")
+  categoryId      Int       @map("category_id")
+  points          Int
+  reason          String
+  createdByUserId Int       @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  voidedAt        DateTime? @map("voided_at")
+  voidedBy        Int?      @map("voided_by")
+  voidReason      String?   @map("void_reason")
 
-  player         Player    @relation(fields: [playerId], references: [id])
-  tournament     Tournament @relation(fields: [tournamentId], references: [id])
-  category       Category  @relation(fields: [categoryId], references: [id])
-  createdByUser  User      @relation("CreatedBy", fields: [createdByUserId], references: [id])
-  voidedByUser   User?     @relation("VoidedBy", fields: [voidedBy], references: [id])
+  player        Player     @relation(fields: [playerId], references: [id])
+  tournament    Tournament @relation(fields: [tournamentId], references: [id])
+  category      Category   @relation(fields: [categoryId], references: [id])
+  createdByUser User       @relation("CreatedBy", fields: [createdByUserId], references: [id])
+  voidedByUser  User?      @relation("VoidedBy", fields: [voidedBy], references: [id])
 
   @@index([playerId, createdAt])
   @@index([tournamentId, categoryId])
@@ -246,6 +282,7 @@ model Category {
   sortOrder Int    @map("sort_order")
 
   players              Player[]
+  tournaments          Tournament[]
   tournamentCategories TournamentCategory[]
   tournamentResults    TournamentResult[]
   pointMovements       PointMovement[]
@@ -275,7 +312,7 @@ model AuditLog {
   payload     String?
   createdAt   DateTime @default(now()) @map("created_at")
 
-  actor       User?    @relation(fields: [actorUserId], references: [id])
+  actor User? @relation(fields: [actorUserId], references: [id])
 
   @@index([entityType, entityId])
   @@map("audit_log")
@@ -283,17 +320,20 @@ model AuditLog {
 
 // ─── Correction Requests ─────────────────────────────────
 model CorrectionRequest {
-  id            Int              @id @default(autoincrement())
-  playerUserId  Int              @map("player_user_id")
-  playerId      Int              @map("player_id")
-  message       String
-  status        CorrectionStatus @default(PENDING)
-  adminResponse String?          @map("admin_response")
-  createdAt     DateTime         @default(now()) @map("created_at")
-  resolvedAt    DateTime?        @map("resolved_at")
+  id               Int              @id @default(autoincrement())
+  playerUserId     Int              @map("player_user_id")
+  playerId         Int              @map("player_id")
+  clubId           Int?             @map("club_id")
+  escalatedToAdmin Boolean          @default(false) @map("escalated_to_admin")
+  message          String
+  status           CorrectionStatus @default(PENDING)
+  adminResponse    String?          @map("admin_response")
+  createdAt        DateTime         @default(now()) @map("created_at")
+  resolvedAt       DateTime?        @map("resolved_at")
 
-  user          User             @relation(fields: [playerUserId], references: [id])
-  player        Player           @relation(fields: [playerId], references: [id])
+  user   User   @relation(fields: [playerUserId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+  club   Club?  @relation(fields: [clubId], references: [id])
 
   @@map("correction_requests")
 }
@@ -322,46 +362,46 @@ enum BlockType {
 
 // ─── Courts ──────────────────────────────────────────────
 model Court {
-  id          Int          @id @default(autoincrement())
-  clubId      Int          @map("club_id")
-  name        String
-  surface     CourtSurface @default(CESPED_SINTETICO)
-  isIndoor    Boolean      @default(false) @map("is_indoor")
-  isActive    Boolean      @default(true) @map("is_active")
-  createdAt   DateTime     @default(now()) @map("created_at")
+  id        Int          @id @default(autoincrement())
+  clubId    Int          @map("club_id")
+  name      String
+  surface   CourtSurface @default(CESPED_SINTETICO)
+  isIndoor  Boolean      @default(false) @map("is_indoor")
+  isActive  Boolean      @default(true) @map("is_active")
+  createdAt DateTime     @default(now()) @map("created_at")
 
-  club        Club         @relation(fields: [clubId], references: [id])
-  schedules   CourtSchedule[]
-  blocks      CourtBlock[]
-  bookings    Booking[]
+  club      Club            @relation(fields: [clubId], references: [id])
+  schedules CourtSchedule[]
+  blocks    CourtBlock[]
+  bookings  Booking[]
 
   @@map("courts")
 }
 
 model CourtSchedule {
-  id            Int     @id @default(autoincrement())
-  courtId       Int     @map("court_id")
-  dayOfWeek     Int     // 0=domingo, 6=sábado
-  openTime      String  // "08:00"
-  closeTime     String  // "23:00"
-  slotDuration  Int     @default(60) @map("slot_duration")
-  pricePerSlot  Int     @default(0) @map("price_per_slot")
+  id           Int    @id @default(autoincrement())
+  courtId      Int    @map("court_id")
+  dayOfWeek    Int // 0=domingo, 6=sábado
+  openTime     String // "08:00"
+  closeTime    String // "23:00"
+  slotDuration Int    @default(60) @map("slot_duration")
+  pricePerSlot Int    @default(0) @map("price_per_slot")
 
-  court         Court   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
   @@unique([courtId, dayOfWeek])
   @@map("court_schedules")
 }
 
 model CourtBlock {
-  id        Int       @id @default(autoincrement())
-  courtId   Int       @map("court_id")
-  type      BlockType @default(MAINTENANCE)
-  startAt   DateTime  @map("start_at")
-  endAt     DateTime  @map("end_at")
-  reason    String?
+  id      Int       @id @default(autoincrement())
+  courtId Int       @map("court_id")
+  type    BlockType @default(MAINTENANCE)
+  startAt DateTime  @map("start_at")
+  endAt   DateTime  @map("end_at")
+  reason  String?
 
-  court     Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  court Court @relation(fields: [courtId], references: [id], onDelete: Cascade)
 
   @@map("court_blocks")
 }
@@ -382,10 +422,11 @@ model Booking {
   createdAt   DateTime      @default(now()) @map("created_at")
   updatedAt   DateTime      @updatedAt @map("updated_at")
 
-  club        Club          @relation(fields: [clubId], references: [id])
-  court       Court         @relation(fields: [courtId], references: [id])
-  createdBy   User          @relation("BookingsCreated", fields: [createdById], references: [id])
-  payments    Payment[]
+  club      Club      @relation(fields: [clubId], references: [id])
+  court     Court     @relation(fields: [courtId], references: [id])
+  createdBy User      @relation("BookingsCreated", fields: [createdById], references: [id])
+  payments  Payment[]
+  match     Match?
 
   @@index([courtId, startAt, endAt])
   @@index([status])
@@ -406,12 +447,36 @@ enum PaymentType {
   SPLIT
 }
 
+enum MatchStatus {
+  OPEN
+  FULL
+  CONFIRMED
+  PLAYED
+  CANCELLED
+  DISPUTED
+}
+
+enum ParticipantStatus {
+  INVITED
+  PENDING_PAYMENT
+  CONFIRMED
+  EXPIRED
+  CANCELLED
+  NO_SHOW
+}
+
+enum ResultAcceptance {
+  PENDING
+  ACCEPTED
+  DISPUTED
+}
+
 // ─── Payments ────────────────────────────────────────────
 model Payment {
   id              Int           @id @default(autoincrement())
   bookingId       Int           @map("booking_id")
   payerId         Int           @map("payer_id")
-  amount          Int           // centavos ARS
+  amount          Int // centavos ARS
   type            PaymentType   @default(FULL)
   status          PaymentStatus @default(PENDING)
   provider        String        @default("mercadopago")
@@ -421,9 +486,78 @@ model Payment {
   paidAt          DateTime?     @map("paid_at")
   createdAt       DateTime      @default(now()) @map("created_at")
 
-  booking         Booking       @relation(fields: [bookingId], references: [id])
-  payer           User          @relation("PaymentsPaid", fields: [payerId], references: [id])
+  booking Booking @relation(fields: [bookingId], references: [id])
+  payer   User    @relation("PaymentsPaid", fields: [payerId], references: [id])
 
   @@index([bookingId])
   @@map("payments")
+}
+
+model Match {
+  id          Int         @id @default(autoincrement())
+  bookingId   Int         @unique @map("booking_id")
+  createdById Int         @map("created_by_id")
+  isPublic    Boolean     @default(false) @map("is_public")
+  maxPlayers  Int         @default(4) @map("max_players")
+  notes       String?
+  status      MatchStatus @default(OPEN)
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  booking       Booking            @relation(fields: [bookingId], references: [id])
+  createdBy     User               @relation("MatchesCreated", fields: [createdById], references: [id])
+  participants  MatchParticipant[]
+  resultEntries MatchResultEntry[]
+
+  @@map("matches")
+}
+
+model MatchParticipant {
+  id          Int               @id @default(autoincrement())
+  matchId     Int               @map("match_id")
+  playerId    Int               @map("player_id")
+  status      ParticipantStatus @default(INVITED)
+  expiresAt   DateTime?         @map("expires_at")
+  joinedAt    DateTime?         @map("joined_at")
+  paidAt      DateTime?         @map("paid_at")
+  splitAmount Int?              @map("split_amount")
+
+  match  Match  @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, playerId])
+  @@index([playerId])
+  @@map("match_participants")
+}
+
+model MatchResultEntry {
+  id            Int              @id @default(autoincrement())
+  matchId       Int              @map("match_id")
+  submittedById Int              @map("submitted_by_id")
+  score         String
+  winnersJson   String           @map("winners_json")
+  losersJson    String           @map("losers_json")
+  acceptance    ResultAcceptance @default(PENDING)
+  disputeReason String?          @map("dispute_reason")
+  resolvedAt    DateTime?        @map("resolved_at")
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  match       Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  submittedBy User  @relation("ResultsSubmitted", fields: [submittedById], references: [id])
+
+  @@map("match_result_entries")
+}
+
+model ReliabilityEvent {
+  id        Int      @id @default(autoincrement())
+  playerId  Int      @map("player_id")
+  eventType String   @map("event_type")
+  delta     Int
+  matchId   Int?     @map("match_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@index([playerId])
+  @@map("reliability_events")
 }

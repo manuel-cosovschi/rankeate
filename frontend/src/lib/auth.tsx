@@ -15,7 +15,7 @@ interface AuthContextType {
     club: any;
     token: string | null;
     loading: boolean;
-    login: (email: string, password: string) => Promise<void>;
+    login: (email: string, password: string) => Promise<User>;
     logout: () => void;
     setAuth: (data: { user: User; accessToken: string; refreshToken: string; player?: any; club?: any }) => void;
 }
@@ -51,9 +51,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('rankeate_auth', JSON.stringify(data));
     };
 
-    const login = async (email: string, password: string) => {
+    const login = async (email: string, password: string): Promise<User> => {
         const data = await api.login(email, password);
         setAuth(data);
+        return data.user;
     };
 
     const logout = () => {
