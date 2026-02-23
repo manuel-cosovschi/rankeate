@@ -61,8 +61,8 @@ router.put('/me/token', async (req: AuthRequest, res: Response) => {
 // ─── Create tournament ──────────────────────────────
 const createTournamentSchema = z.object({
     name: z.string().min(3),
-    localityId: z.number().int().positive(),
-    categoryId: z.number().int().positive(),
+    localityId: z.coerce.number().int().positive(),
+    categoryId: z.coerce.number().int().positive(),
     gender: z.enum(['MALE', 'FEMALE', 'MIXED']),
     startDate: z.string(),
     endDate: z.string().optional(),
