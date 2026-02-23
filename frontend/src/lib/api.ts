@@ -24,6 +24,10 @@ async function apiFetch(endpoint: string, options: FetchOptions = {}) {
     const data = await res.json();
 
     if (!res.ok) {
+        if (data.details && Array.isArray(data.details)) {
+            const errMsgs = data.details.map((d: any) => `${d.path?.join('.')}: ${d.message}`).join(', ');
+            throw new Error(`${data.error}: ${errMsgs}`);
+        }
         throw new Error(data.error || 'Error de servidor');
     }
 
