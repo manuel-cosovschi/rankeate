@@ -58,15 +58,23 @@ export default function MatchesPage() {
             </div>
 
             {matches.length === 0 ? (
-                <Card className="bg-muted/50 border-dashed">
-                    <CardContent className="flex flex-col items-center justify-center h-48 text-center">
-                        <Trophy className="h-10 w-10 text-muted-foreground mb-4 opacity-50" />
-                        <h3 className="font-semibold text-lg">No hay partidos abiertos</h3>
-                        <p className="text-muted-foreground mt-1">
-                            Volvé más tarde o creá un partido desde tus reservas.
-                        </p>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center rounded-2xl border border-dashed border-primary/20 bg-gradient-to-b from-primary/5 to-transparent">
+                    <div className="h-20 w-20 bg-primary/10 text-primary rounded-full flex items-center justify-center mb-6 shadow-inner">
+                        <Calendar className="h-10 w-10" />
+                    </div>
+                    <h3 className="text-2xl font-bold tracking-tight mb-2">No hay partidos abiertos</h3>
+                    <p className="text-muted-foreground max-w-sm mx-auto mb-8 leading-relaxed">
+                        Parece que ahora mismo no hay partidos buscando jugadores. Podés crear uno armando tu propio grupo desde tus reservas.
+                    </p>
+                    <div className="flex gap-4">
+                        <Button variant="default" onClick={() => router.push('/search')} className="shadow-lg">
+                            <MapPin className="mr-2 h-4 w-4" /> Buscar Cancha
+                        </Button>
+                        <Button variant="outline" onClick={() => router.push('/dashboard')}>
+                            Ir al Panel
+                        </Button>
+                    </div>
+                </div>
             ) : (
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {matches.map((match) => (

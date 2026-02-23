@@ -172,6 +172,7 @@ export default function AdminPage() {
                                             <h3 style={{ fontWeight: 700, marginBottom: 'var(--space-xs)' }}>{club.clubName || club.name}</h3>
                                             <div style={{ display: 'flex', gap: 'var(--space-lg)', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                                                 <span>📧 {club.email}</span>
+                                                <span>📱 {club.phone || 'Sin teléfono'}</span>
                                                 <span>👤 {club.managerName}</span>
                                                 <span>📍 {club.localityName}</span>
                                             </div>
