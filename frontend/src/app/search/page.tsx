@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { Search, MapPin, Users } from 'lucide-react';
 
 function SearchContent() {
     const searchParams = useSearchParams();
@@ -25,18 +26,23 @@ function SearchContent() {
     return (
         <div className="container" style={{ paddingTop: 'var(--space-xl)' }}>
             <div className="breadcrumb">
-                <Link href="/">Inicio</Link><span className="separator">/</span><span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Buscar Jugadores</span>
+                <Link href="/">Inicio</Link>
+                <span className="separator">/</span>
+                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>Buscar Jugadores</span>
             </div>
 
-            <div className="card fade-in" style={{ padding: 'var(--space-xl)', marginBottom: 'var(--space-xl)' }}>
-                <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-md)' }}>
+            <div className="card fade-in" style={{ padding: 'var(--space-xl)', marginBottom: 'var(--space-xl)', borderRadius: 'var(--radius-2xl)' }}>
+                <h1 style={{ fontSize: 'var(--font-size-2xl)', fontWeight: 700, marginBottom: 'var(--space-md)', letterSpacing: '-0.02em' }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--blue-600)" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                        <Search size={22} color="var(--blue-600)" />
                         Buscar Jugadores
                     </span>
                 </h1>
                 <form onSubmit={(e) => { e.preventDefault(); doSearch(query); }} style={{ display: 'flex', gap: 'var(--space-sm)' }}>
-                    <input className="form-input" style={{ flex: 1 }} type="text" placeholder="Nombre, apellido o DNI..." value={query} onChange={(e) => setQuery(e.target.value)} />
+                    <div style={{ flex: 1, position: 'relative' }}>
+                        <Search size={16} color="var(--text-muted)" style={{ position: 'absolute', left: '0.875rem', top: '50%', transform: 'translateY(-50%)' }} />
+                        <input className="form-input" style={{ paddingLeft: '2.5rem' }} type="text" placeholder="Nombre, apellido o DNI..." value={query} onChange={(e) => setQuery(e.target.value)} />
+                    </div>
                     <button className="btn btn-primary" type="submit" disabled={loading}>{loading ? 'Buscando...' : 'Buscar'}</button>
                 </form>
             </div>
@@ -44,11 +50,22 @@ function SearchContent() {
             {loading ? (
                 <div className="loading"><div className="spinner" /></div>
             ) : searched && results.length === 0 ? (
-                <div className="empty-state"><p>No se encontraron jugadores para &quot;{query}&quot;.</p></div>
+                <div className="card" style={{ textAlign: 'center', padding: 'var(--space-3xl)' }}>
+                    <Users size={40} color="var(--text-muted)" style={{ marginBottom: 'var(--space-md)', opacity: 0.5 }} />
+                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-md)' }}>No se encontraron jugadores para &quot;{query}&quot;</p>
+                </div>
             ) : results.length > 0 && (
                 <div className="table-container fade-in">
                     <table className="data-table">
-                        <thead><tr><th>JUGADOR</th><th>CATEGORÍA</th><th>LOCALIDAD</th><th style={{ textAlign: 'right' }}>PUNTOS</th><th></th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th>JUGADOR</th>
+                                <th>CATEGORÍA</th>
+                                <th>LOCALIDAD</th>
+                                <th style={{ textAlign: 'right' }}>PUNTOS</th>
+                                <th></th>
+                            </tr>
+                        </thead>
                         <tbody>
                             {results.map((p) => (
                                 <tr key={p.id}>
@@ -59,8 +76,15 @@ function SearchContent() {
                                         </div>
                                     </td>
                                     <td><span className="badge-category">{p.categoryName}</span></td>
-                                    <td style={{ color: 'var(--text-secondary)' }}>{p.localityName}</td>
-                                    <td style={{ textAlign: 'right', fontWeight: 700 }}>{p.totalPoints12m || 0} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 'var(--font-size-xs)' }}>pts</span></td>
+                                    <td>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                                            <MapPin size={13} />
+                                            {p.localityName}
+                                        </span>
+                                    </td>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <span className="points-value">{p.totalPoints12m || 0} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 'var(--font-size-xs)' }}>pts</span></span>
+                                    </td>
                                     <td><Link href={`/players/${p.id}`} className="btn btn-outline btn-sm">Ver Perfil</Link></td>
                                 </tr>
                             ))}

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { Trophy, MapPin, Tag, Search, TrendingUp, Users, Award } from 'lucide-react';
 
 interface RankingEntry {
     rank: number;
@@ -71,31 +72,36 @@ export default function HomePage() {
             {/* Hero Section */}
             <section className="hero-blue">
                 <div className="hero-content">
-                    <div className="hero-badge"><span className="dot"></span> Ranking en Vivo 2025</div>
-                    <h1 className="hero-title">El Ranking Oficial de<br />Padel de Argentina</h1>
+                    <div className="hero-badge">
+                        <span className="dot"></span>
+                        Ranking en Vivo 2025
+                    </div>
+                    <h1 className="hero-title">
+                        El Ranking Oficial de<br />Padel en Argentina
+                    </h1>
                     <p className="hero-subtitle">
-                        Competí, ganá y seguí tu progreso. Encontrá tu ranking hoy entre miles de jugadores y clubes de todo el país.
+                        Competí, ganá y seguí tu progreso entre miles de jugadores y clubes de todo el país.
                     </p>
                     <div className="hero-search">
                         <div className="search-field">
-                            <svg className="field-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>
+                            <Search className="field-icon" size={18} />
                             <input
                                 type="text"
-                                placeholder="Buscar jugador..."
+                                placeholder="Buscar jugador por nombre..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleHeroSearch()}
                             />
                         </div>
                         <div className="search-field">
-                            <svg className="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 6-9 13-9 13s-9-7-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                            <MapPin className="field-icon" size={16} />
                             <select value={selectedLocality} onChange={(e) => { setSelectedLocality(e.target.value); setPage(1); }}>
                                 <option value="">Todas las Localidades</option>
                                 {localities.map((loc) => <option key={loc.id} value={loc.id}>{loc.name}</option>)}
                             </select>
                         </div>
                         <div className="search-field">
-                            <svg className="field-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 20h16M4 20V4l8 4 8-4v16" /></svg>
+                            <Tag className="field-icon" size={16} />
                             <select value={selectedCategory} onChange={(e) => { setSelectedCategory(e.target.value); setPage(1); }}>
                                 <option value="">Todas las Categorías</option>
                                 {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
@@ -113,8 +119,8 @@ export default function HomePage() {
                         {/* Sidebar */}
                         <aside className="category-sidebar">
                             <div className="card" style={{ padding: 'var(--space-md)' }}>
-                                <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-sm)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6h16M4 12h10M4 18h6" /></svg>
+                                <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-sm)', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)' }}>
+                                    <Tag size={14} />
                                     Categorías
                                 </h3>
                                 <div className="category-list">
@@ -122,7 +128,7 @@ export default function HomePage() {
                                         className={`category-item ${!selectedCategory ? 'active' : ''}`}
                                         onClick={() => { setSelectedCategory(''); setPage(1); }}
                                     >
-                                        <span>Todas las Categorías</span>
+                                        <span>Todas</span>
                                         <span className="count">{total || '—'}</span>
                                     </div>
                                     {categories.map((cat) => (
@@ -139,61 +145,79 @@ export default function HomePage() {
 
                             <div className="cta-card">
                                 <h3>¿Sos jugador?</h3>
-                                <p>Unite al ranking oficial, seguí tus estadísticas y competí en torneos.</p>
-                                <Link href="/register" className="btn btn-sm">Crear Perfil de Jugador</Link>
+                                <p>Unite al ranking oficial y seguí tu progreso en cada torneo.</p>
+                                <Link href="/register" className="btn btn-sm">Crear Perfil</Link>
                             </div>
                         </aside>
 
                         {/* Main Content */}
                         <div>
                             <div className="section-header">
-                                <h2 className="section-title" style={{ marginBottom: 0 }}>Ranking {selectedGender === 'MALE' ? 'Caballeros' : 'Damas'}</h2>
+                                <h2 className="section-title" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <Trophy size={20} color="var(--blue-600)" />
+                                    Ranking {selectedGender === 'MALE' ? 'Caballeros' : 'Damas'}
+                                </h2>
+                                {total > 0 && (
+                                    <span style={{ fontSize: 'var(--font-size-sm)', color: 'var(--text-muted)', fontWeight: 500 }}>
+                                        {total} jugadores
+                                    </span>
+                                )}
                             </div>
                             <div className="tabs" style={{ marginBottom: 'var(--space-lg)' }}>
-                                <button className={`tab ${selectedGender === 'MALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('MALE'); setPage(1); }}>🏆 Caballeros</button>
-                                <button className={`tab ${selectedGender === 'FEMALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('FEMALE'); setPage(1); }}>🏆 Damas</button>
+                                <button className={`tab ${selectedGender === 'MALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('MALE'); setPage(1); }}>
+                                    Caballeros
+                                </button>
+                                <button className={`tab ${selectedGender === 'FEMALE' ? 'active' : ''}`} onClick={() => { setSelectedGender('FEMALE'); setPage(1); }}>
+                                    Damas
+                                </button>
                             </div>
 
                             {loading ? (
                                 <div className="loading"><div className="spinner" /></div>
                             ) : rankings.length === 0 ? (
-                                <div className="empty-state"><p>No hay jugadores en este ranking aún.</p></div>
+                                <div className="card" style={{ textAlign: 'center', padding: 'var(--space-3xl)' }}>
+                                    <Users size={40} color="var(--text-muted)" style={{ marginBottom: 'var(--space-md)', opacity: 0.5 }} />
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 'var(--font-size-md)' }}>No hay jugadores en este ranking aún.</p>
+                                </div>
                             ) : (
                                 <>
-                                    <div className="table-container">
+                                    <div className="table-container fade-in">
                                         <table className="data-table">
                                             <thead>
                                                 <tr>
-                                                    <th style={{ width: '60px' }}>RANK</th>
+                                                    <th style={{ width: '60px' }}>#</th>
                                                     <th>JUGADOR</th>
                                                     <th>CATEGORÍA</th>
-                                                    <th>CLUB / LOCALIDAD</th>
+                                                    <th>LOCALIDAD</th>
                                                     <th style={{ textAlign: 'right' }}>PUNTOS</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {rankings.map((entry) => (
-                                                    <tr key={entry.playerId} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/players/${entry.playerId}`}>
+                                                {rankings.map((entry, idx) => (
+                                                    <tr key={entry.playerId} className={`fade-in stagger-${Math.min(idx + 1, 4)}`} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/players/${entry.playerId}`}>
                                                         <td>{getRankBubble(entry.rank)}</td>
                                                         <td>
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                                                 <div className={`avatar avatar-sm ${avatarColors[entry.rank % 3]}`}>
                                                                     {getInitials(entry.firstName, entry.lastName)}
                                                                 </div>
-                                                                <Link href={`/players/${entry.playerId}`} style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                                                                <Link href={`/players/${entry.playerId}`} style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none' }}>
                                                                     {entry.firstName} {entry.lastName}
                                                                 </Link>
                                                             </div>
                                                         </td>
                                                         <td><span className="badge-category">{entry.categoryName}</span></td>
                                                         <td>
-                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
-                                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 6-9 13-9 13s-9-7-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+                                                            <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
+                                                                <MapPin size={13} />
                                                                 {entry.localityName}
                                                             </span>
                                                         </td>
                                                         <td style={{ textAlign: 'right' }}>
-                                                            <span className="points-value">{entry.totalPoints.toLocaleString()} <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 'var(--font-size-xs)' }}>pts</span></span>
+                                                            <span className="points-value">
+                                                                {entry.totalPoints.toLocaleString()}
+                                                                <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: 'var(--font-size-xs)', marginLeft: '3px' }}>pts</span>
+                                                            </span>
                                                         </td>
                                                     </tr>
                                                 ))}
@@ -202,7 +226,7 @@ export default function HomePage() {
                                     </div>
 
                                     <div className="pagination">
-                                        <span>Mostrando {(page - 1) * limit + 1}-{Math.min(page * limit, total)} de {total}</span>
+                                        <span>Mostrando {(page - 1) * limit + 1}–{Math.min(page * limit, total)} de {total}</span>
                                         <div className="pagination-controls">
                                             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
                                             <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Siguiente</button>
@@ -213,6 +237,31 @@ export default function HomePage() {
                         </div>
                     </div>
                 </section>
+
+                {/* Features Section */}
+                <div className="features-grid fade-in">
+                    <div className="feature-card">
+                        <div className="feature-icon blue">
+                            <TrendingUp size={26} />
+                        </div>
+                        <h3>Ranking en Vivo</h3>
+                        <p>Seguí tu posición actualizada en tiempo real con cada torneo que jugás.</p>
+                    </div>
+                    <div className="feature-card">
+                        <div className="feature-icon green">
+                            <Award size={26} />
+                        </div>
+                        <h3>Torneos Oficiales</h3>
+                        <p>Participá en torneos de clubes verificados y sumá puntos para tu ranking.</p>
+                    </div>
+                    <div className="feature-card">
+                        <div className="feature-icon gold">
+                            <Users size={26} />
+                        </div>
+                        <h3>Comunidad</h3>
+                        <p>Conectá con jugadores de tu zona, encontrá partidos y reservá canchas.</p>
+                    </div>
+                </div>
 
                 {/* CTA Banner */}
                 <div className="cta-banner">
