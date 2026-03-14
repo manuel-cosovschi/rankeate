@@ -60,8 +60,8 @@ function SearchContent() {
                         <thead>
                             <tr>
                                 <th>JUGADOR</th>
-                                <th>CATEGORÍA</th>
-                                <th>LOCALIDAD</th>
+                                <th className="col-hide-mobile">CATEGORÍA</th>
+                                <th className="col-hide-mobile">LOCALIDAD</th>
                                 <th style={{ textAlign: 'right' }}>PUNTOS</th>
                                 <th></th>
                             </tr>
@@ -70,13 +70,18 @@ function SearchContent() {
                             {results.map((p) => (
                                 <tr key={p.id}>
                                     <td>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                            <div className="avatar avatar-sm avatar-blue">{p.firstName?.[0]}{p.lastName?.[0]}</div>
-                                            <span style={{ fontWeight: 600 }}>{p.firstName} {p.lastName}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                                            <div className="avatar avatar-sm avatar-blue" style={{ flexShrink: 0 }}>{p.firstName?.[0]}{p.lastName?.[0]}</div>
+                                            <div style={{ minWidth: 0 }}>
+                                                <span style={{ fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.firstName} {p.lastName}</span>
+                                                <span className="show-mobile" style={{ display: 'none', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                    {p.categoryName} · {p.localityName}
+                                                </span>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td><span className="badge-category">{p.categoryName}</span></td>
-                                    <td>
+                                    <td className="col-hide-mobile"><span className="badge-category">{p.categoryName}</span></td>
+                                    <td className="col-hide-mobile">
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                                             <MapPin size={13} />
                                             {p.localityName}

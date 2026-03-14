@@ -121,7 +121,8 @@ export default function HomePage() {
                             <div className="card" style={{ padding: 'var(--space-md)' }}>
                                 <h3 style={{ fontSize: 'var(--font-size-sm)', fontWeight: 600, marginBottom: 'var(--space-sm)', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-primary)' }}>
                                     <Tag size={14} />
-                                    Categorías
+                                    <span className="hide-mobile" style={{ display: 'inline' }}>Categorías</span>
+                                    <span className="show-mobile" style={{ display: 'none' }}>Filtrar</span>
                                 </h3>
                                 <div className="category-list">
                                     <div
@@ -143,7 +144,7 @@ export default function HomePage() {
                                 </div>
                             </div>
 
-                            <div className="cta-card">
+                            <div className="cta-card hide-mobile" style={{ display: 'none' }}>
                                 <h3>¿Sos jugador?</h3>
                                 <p>Unite al ranking oficial y seguí tu progreso en cada torneo.</p>
                                 <Link href="/register" className="btn btn-sm">Crear Perfil</Link>
@@ -185,10 +186,10 @@ export default function HomePage() {
                                         <table className="data-table">
                                             <thead>
                                                 <tr>
-                                                    <th style={{ width: '60px' }}>#</th>
+                                                    <th style={{ width: '52px' }}>#</th>
                                                     <th>JUGADOR</th>
-                                                    <th>CATEGORÍA</th>
-                                                    <th>LOCALIDAD</th>
+                                                    <th className="col-hide-mobile">CATEGORÍA</th>
+                                                    <th className="col-hide-mobile">LOCALIDAD</th>
                                                     <th style={{ textAlign: 'right' }}>PUNTOS</th>
                                                 </tr>
                                             </thead>
@@ -197,17 +198,23 @@ export default function HomePage() {
                                                     <tr key={entry.playerId} className={`fade-in stagger-${Math.min(idx + 1, 4)}`} style={{ cursor: 'pointer' }} onClick={() => window.location.href = `/players/${entry.playerId}`}>
                                                         <td>{getRankBubble(entry.rank)}</td>
                                                         <td>
-                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                                                <div className={`avatar avatar-sm ${avatarColors[entry.rank % 3]}`}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+                                                                <div className={`avatar avatar-sm ${avatarColors[entry.rank % 3]}`} style={{ flexShrink: 0 }}>
                                                                     {getInitials(entry.firstName, entry.lastName)}
                                                                 </div>
-                                                                <Link href={`/players/${entry.playerId}`} style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none' }}>
-                                                                    {entry.firstName} {entry.lastName}
-                                                                </Link>
+                                                                <div style={{ minWidth: 0 }}>
+                                                                    <Link href={`/players/${entry.playerId}`} style={{ fontWeight: 600, color: 'var(--text-primary)', textDecoration: 'none', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                        {entry.firstName} {entry.lastName}
+                                                                    </Link>
+                                                                    {/* Category shown inline on mobile only */}
+                                                                    <span className="show-mobile" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                                        {entry.categoryName} · {entry.localityName}
+                                                                    </span>
+                                                                </div>
                                                             </div>
                                                         </td>
-                                                        <td><span className="badge-category">{entry.categoryName}</span></td>
-                                                        <td>
+                                                        <td className="col-hide-mobile"><span className="badge-category">{entry.categoryName}</span></td>
+                                                        <td className="col-hide-mobile">
                                                             <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: 'var(--text-secondary)', fontSize: 'var(--font-size-sm)' }}>
                                                                 <MapPin size={13} />
                                                                 {entry.localityName}

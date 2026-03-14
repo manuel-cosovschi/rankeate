@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'Rankeate - El Ranking Oficial de Padel',
     description: 'Sistema oficial de rankings de padel de Argentina. Consultá posiciones, torneos y resultados por localidad y categoría.',
     keywords: 'ranking, padel, deportes, torneos, puntos, categorias, argentina',
+    viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

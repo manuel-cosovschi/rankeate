@@ -88,7 +88,7 @@ export default function PlayerProfilePage() {
             </div>
 
             {/* Stats Cards */}
-            <div className="grid-3 fade-in" style={{ marginBottom: 'var(--space-xl)' }}>
+            <div className="stats-grid fade-in" style={{ marginBottom: 'var(--space-xl)' }}>
                 <div className="card card-stat">
                     <div className="card-stat-icon blue"><Trophy size={20} /></div>
                     <div className="stat-label">PUNTOS TOTALES (12M)</div>
@@ -129,8 +129,8 @@ export default function PlayerProfilePage() {
                             <thead>
                                 <tr>
                                     <th>TORNEO</th>
-                                    <th>FECHA</th>
-                                    <th>NIVEL</th>
+                                    <th className="col-hide-mobile">FECHA</th>
+                                    <th className="col-hide-mobile">NIVEL</th>
                                     <th>RESULTADO</th>
                                     <th style={{ textAlign: 'right' }}>PUNTOS</th>
                                 </tr>
@@ -139,13 +139,18 @@ export default function PlayerProfilePage() {
                                 {tournaments.map((t: any, i: number) => (
                                     <tr key={i}>
                                         <td>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                                <Trophy size={15} color="var(--blue-500)" />
-                                                <span style={{ fontWeight: 600 }}>{t.tournamentName}</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0 }}>
+                                                <Trophy size={14} color="var(--blue-400)" style={{ flexShrink: 0 }} />
+                                                <div style={{ minWidth: 0 }}>
+                                                    <span style={{ fontWeight: 600, display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.tournamentName}</span>
+                                                    <span className="show-mobile" style={{ display: 'none', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                                                        {new Date(t.date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })} · {t.level}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </td>
-                                        <td style={{ color: 'var(--text-secondary)' }}>{new Date(t.date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
-                                        <td>{getLevelBadge(t.level)}</td>
+                                        <td className="col-hide-mobile" style={{ color: 'var(--text-secondary)' }}>{new Date(t.date).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                                        <td className="col-hide-mobile">{getLevelBadge(t.level)}</td>
                                         <td>
                                             <span className={positionLabels[t.position]?.class || ''} style={{ fontWeight: 500 }}>
                                                 {positionLabels[t.position]?.label || t.position}

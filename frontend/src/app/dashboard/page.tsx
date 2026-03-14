@@ -177,12 +177,12 @@ export default function DashboardPage() {
             {/* Explore Tab */}
             {activeTab === 'explore' && (
                 <div className="fade-in">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-lg)', flexWrap: 'wrap', gap: 'var(--space-sm)' }}>
                         <h3 className="card-title" style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             <Search size={18} color="var(--blue-600)" />
                             Buscar en tu zona
                         </h3>
-                        <select className="form-select" style={{ minWidth: '220px', width: 'auto' }} value={exploreLocality} onChange={e => setExploreLocality(e.target.value)}>
+                        <select className="form-select" style={{ minWidth: '180px', width: 'auto', maxWidth: '100%' }} value={exploreLocality} onChange={e => setExploreLocality(e.target.value)}>
                             <option value="">Mi Localidad</option>
                             {localities.map(l => <option key={l.id} value={l.id}>{l.name} - {l.province}</option>)}
                         </select>
@@ -198,7 +198,7 @@ export default function DashboardPage() {
                                 {exploreTournaments.length === 0 ? (
                                     <div className="alert alert-info">No hay torneos próximos en esta localidad.</div>
                                 ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-md)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 'var(--space-md)' }}>
                                         {exploreTournaments.map((t: any) => (
                                             <div key={t.id} className="card" style={{ padding: 'var(--space-md)' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -224,7 +224,7 @@ export default function DashboardPage() {
                                 {exploreMatches.length === 0 ? (
                                     <div className="alert alert-info">No hay partidos abiertos en esta zona.</div>
                                 ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 'var(--space-md)' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 'var(--space-md)' }}>
                                         {exploreMatches.map((m: any) => (
                                             <div key={m.id} className="card" style={{ padding: 'var(--space-md)', borderTop: '3px solid var(--success-light)' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
